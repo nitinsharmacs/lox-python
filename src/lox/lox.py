@@ -1,8 +1,11 @@
 import sys
 
+from src.lox.scanner import Scanner
+
 
 def run(code: str):
-    print(code)
+    scanner = Scanner(code)
+    print(scanner.scan_tokens())
 
 
 def run_file(file: str):
