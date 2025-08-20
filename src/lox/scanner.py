@@ -3,11 +3,18 @@ from src.lox.token import Token, TokenType
 
 
 class TokenError(Exception):
-    def __init__(self, line: int, char: str, *args):
-        self.msg = "Unexpected character"
+    def __init__(self, line: int, char: str, msg=None, *args):
+        self.msg = msg or "Unexpected character"
         self.line = line
         self.char = char
         super().__init__(f"Line: {self.line}, {self.msg}: {self.char}", *args)
+
+
+class UnterminatedStringError(TokenError):
+    def __init__(self, line, *args):
+        self.line = line
+        self.msg = "Unterminated string"
+        super().__init__(line, "", self.msg, *args)
 
 
 class Scanner:
@@ -52,6 +59,25 @@ class Scanner:
         if self.has_more():
             return self.source_code[self.current]
         return "\0"
+
+    def scan_string(self):
+        while self.has_more():
+            char = self.peek()
+
+            if char == '"':
+                break
+            if char == "\n":
+                return self.errors.append(UnterminatedStringError(self.line))
+
+            self.advance()
+        else:
+            return self.errors.append(UnterminatedStringError(self.line))
+
+        value = self.source_code[self.start + 1 : self.current]
+
+        self.advance()
+
+        self.add_token(TokenType.STRING, value)
 
     def scan_token(self):
         char = self.advance()
@@ -100,6 +126,8 @@ class Scanner:
                     self.exhaust_line()
                 else:
                     self.add_token(TokenType.SLASH)
+            case '"':
+                self.scan_string()
             case " " | "\r" | "\t":
                 pass
             case "\n":
