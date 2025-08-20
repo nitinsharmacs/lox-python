@@ -2,7 +2,7 @@ import typing
 from src.lox.token import Token, TokenType
 
 
-class SyntaxError(Exception):
+class TokenError(Exception):
     def __init__(self, line: int, char: str, *args):
         self.msg = "Unexpected character"
         self.line = line
@@ -20,7 +20,7 @@ class Scanner:
         self.current = 0
         self.line = 1
 
-        self.errors: list[SyntaxError] = []
+        self.errors: list[TokenError] = []
 
     def has_more(self) -> bool:
         return self.current < len(self.source_code)
@@ -30,9 +30,28 @@ class Scanner:
         self.current += 1
         return char
 
+    def match_next(self, expected: str) -> bool:
+        if self.has_more():
+            if self.source_code[self.current] == expected:
+                self.current += 1
+                return True
+            else:
+                return False
+
+        return False
+
     def add_token(self, token_type: TokenType, literal: typing.Any = None):
         lexeme = self.source_code[self.start : self.current]
         self.tokens.append(Token(token_type, self.line, literal, lexeme))
+
+    def exhaust_line(self):
+        while self.peek() != "\n" and self.has_more():
+            self.advance()
+
+    def peek(self) -> str:
+        if self.has_more():
+            return self.source_code[self.current]
+        return "\0"
 
     def scan_token(self):
         char = self.advance()
@@ -58,8 +77,35 @@ class Scanner:
                 self.add_token(TokenType.SEMICOLON)
             case "*":
                 self.add_token(TokenType.STAR)
+            case "=":
+                self.add_token(
+                    TokenType.EQUAL_EQUAL if self.match_next("=") else TokenType.EQUAL
+                )
+            case "!":
+                self.add_token(
+                    TokenType.BANG_EQUAL if self.match_next("=") else TokenType.BANG
+                )
+            case ">":
+                self.add_token(
+                    TokenType.GREATER_EQUAL
+                    if self.match_next("=")
+                    else TokenType.GREATER
+                )
+            case "<":
+                self.add_token(
+                    TokenType.LESS_EQUAL if self.match_next("=") else TokenType.LESS
+                )
+            case "/":
+                if self.match_next("/"):
+                    self.exhaust_line()
+                else:
+                    self.add_token(TokenType.SLASH)
+            case " " | "\r" | "\t":
+                pass
+            case "\n":
+                self.line += 1
             case _:
-                error = SyntaxError(self.line, char)
+                error = TokenError(self.line, char)
                 self.errors.append(error)
                 print(error)
 
