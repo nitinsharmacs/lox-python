@@ -37,7 +37,7 @@ class Scanner:
         self.current += 1
         return char
 
-    def match_next(self, expected: str) -> bool:
+    def match(self, expected: str) -> bool:
         if self.has_more():
             if self.source_code[self.current] == expected:
                 self.current += 1
@@ -60,6 +60,11 @@ class Scanner:
             return self.source_code[self.current]
         return "\0"
 
+    def peek_next(self) -> str:
+        if self.current + 1 < len(self.source_code):
+            return self.source_code[self.current + 1]
+        return "\0"
+
     def scan_string(self):
         while self.has_more():
             char = self.peek()
@@ -78,6 +83,20 @@ class Scanner:
         self.advance()
 
         self.add_token(TokenType.STRING, value)
+
+    def scan_number(self):
+        while self.peek().isdigit():
+            self.advance()
+
+        if self.peek() == "." and self.peek_next().isdigit():
+            self.advance()
+
+            while self.peek().isdigit():
+                self.advance()
+
+        self.add_token(
+            TokenType.NUMBER, float(self.source_code[self.start : self.current])
+        )
 
     def scan_token(self):
         char = self.advance()
@@ -105,24 +124,22 @@ class Scanner:
                 self.add_token(TokenType.STAR)
             case "=":
                 self.add_token(
-                    TokenType.EQUAL_EQUAL if self.match_next("=") else TokenType.EQUAL
+                    TokenType.EQUAL_EQUAL if self.match("=") else TokenType.EQUAL
                 )
             case "!":
                 self.add_token(
-                    TokenType.BANG_EQUAL if self.match_next("=") else TokenType.BANG
+                    TokenType.BANG_EQUAL if self.match("=") else TokenType.BANG
                 )
             case ">":
                 self.add_token(
-                    TokenType.GREATER_EQUAL
-                    if self.match_next("=")
-                    else TokenType.GREATER
+                    TokenType.GREATER_EQUAL if self.match("=") else TokenType.GREATER
                 )
             case "<":
                 self.add_token(
-                    TokenType.LESS_EQUAL if self.match_next("=") else TokenType.LESS
+                    TokenType.LESS_EQUAL if self.match("=") else TokenType.LESS
                 )
             case "/":
-                if self.match_next("/"):
+                if self.match("/"):
                     self.exhaust_line()
                 else:
                     self.add_token(TokenType.SLASH)
@@ -133,9 +150,12 @@ class Scanner:
             case "\n":
                 self.line += 1
             case _:
-                error = TokenError(self.line, char)
-                self.errors.append(error)
-                print(error)
+                if char.isdigit():
+                    self.scan_number()
+                else:
+                    error = TokenError(self.line, char)
+                    self.errors.append(error)
+                    print(error)
 
     def scan_tokens(self) -> list[Token]:
         while self.has_more():
