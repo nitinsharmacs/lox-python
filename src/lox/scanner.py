@@ -1,5 +1,7 @@
+from curses.ascii import isalnum, isalpha
 import typing
-from src.lox.token import Token, TokenType
+
+from src.lox.token import KEYWORDS, Token, TokenType
 
 
 class TokenError(Exception):
@@ -98,6 +100,19 @@ class Scanner:
             TokenType.NUMBER, float(self.source_code[self.start : self.current])
         )
 
+    def scan_identifier(self):
+        while self.isalnum(self.peek()):
+            self.advance()
+
+        lexeme = self.source_code[self.start : self.current]
+
+        token_type = KEYWORDS.get(lexeme)
+
+        if token_type is None:
+            token_type = TokenType.IDENTIFIER
+
+        self.add_token(token_type)
+
     def scan_token(self):
         char = self.advance()
 
@@ -152,6 +167,8 @@ class Scanner:
             case _:
                 if char.isdigit():
                     self.scan_number()
+                elif self.isalpha(char):
+                    self.scan_identifier()
                 else:
                     error = TokenError(self.line, char)
                     self.errors.append(error)
@@ -165,3 +182,13 @@ class Scanner:
         self.tokens.append(Token(TokenType.EOF, self.line, None, ""))
 
         return self.tokens
+
+    # utils
+
+    @staticmethod
+    def isalpha(char: str) -> bool:
+        return char.isalpha() or char == "_"
+
+    @staticmethod
+    def isalnum(char: str) -> bool:
+        return char.isalnum() or char == "_"
