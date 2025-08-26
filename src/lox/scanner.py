@@ -113,6 +113,13 @@ class Scanner:
 
         self.add_token(token_type)
 
+    def ignore_comment_block(self):
+        while not self.match("*"):
+            self.advance()
+
+        if self.peek() == "/":
+            self.advance()
+
     def scan_token(self):
         char = self.advance()
 
@@ -156,6 +163,8 @@ class Scanner:
             case "/":
                 if self.match("/"):
                     self.exhaust_line()
+                elif self.match("*"):
+                    self.ignore_comment_block()
                 else:
                     self.add_token(TokenType.SLASH)
             case '"':
