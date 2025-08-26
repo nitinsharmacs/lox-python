@@ -114,10 +114,21 @@ class Scanner:
         self.add_token(token_type)
 
     def ignore_comment_block(self):
-        while not self.match("*"):
-            self.advance()
+        while True:
+            char = self.peek()
 
-        if self.peek() == "/":
+            if char == "*" and self.peek_next() == "/":
+                self.advance()
+                self.advance()
+                break
+
+            if char == "\n":
+                self.line += 1
+
+            if char == "\0":
+                self.errors.append(TokenError(self.line, "", "Unterminated comment"))
+                break
+
             self.advance()
 
     def scan_token(self):
