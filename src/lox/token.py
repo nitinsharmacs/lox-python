@@ -60,7 +60,7 @@ class Token:
         self.lexeme = lexeme
 
     def __str__(self):
-        return self.type + " " + self.lexeme + " " + self.literal
+        return self.lexeme + " " + self.literal
 
 
 KEYWORDS = {

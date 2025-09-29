@@ -1,11 +1,30 @@
 import sys
 
+from src.lox.ast_printer import AstPrinter
+from src.lox.parser import Parser
 from src.lox.scanner import Scanner
+
+
+def print_errors(errors: list[Exception]):
+    for error in errors:
+        print(error)
 
 
 def run(code: str):
     scanner = Scanner(code)
-    print(scanner.scan_tokens())
+    tokens = scanner.scan_tokens()
+
+    if len(scanner.errors) > 0:
+        return
+
+    parser = Parser(tokens)
+    ast = parser.parse()
+
+    if len(parser.errors) > 0:
+        print_errors(parser.errors)
+        return
+
+    AstPrinter().print(ast)
 
 
 def run_file(file: str):
