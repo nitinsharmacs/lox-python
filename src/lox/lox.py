@@ -1,6 +1,7 @@
 import sys
 
 from src.lox.ast_printer import AstPrinter
+from src.lox.interpreter import Interpreter
 from src.lox.parser import Parser
 from src.lox.scanner import Scanner
 
@@ -24,7 +25,9 @@ def run(code: str):
         print_errors(parser.errors)
         return
 
-    AstPrinter().print(ast)
+    interpreter = Interpreter()
+    print(interpreter.evaluate(ast))
+    # AstPrinter().print(ast)
 
 
 def run_file(file: str):

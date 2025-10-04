@@ -88,7 +88,7 @@ class Parser:
 
         while self.match_any(TokenType.PLUS, TokenType.MINUS):
             operator = self.previous()
-            right_operand = self.term()
+            right_operand = self.factor()
             expr = Binary(expr, operator, right_operand)
 
         return expr
@@ -100,7 +100,7 @@ class Parser:
         """
         expr = self.unary()
 
-        while self.match_any(TokenType.PLUS, TokenType.MINUS):
+        while self.match_any(TokenType.SLASH, TokenType.STAR):
             operator = self.previous()
             right_operand = self.unary()
             expr = Binary(expr, operator, right_operand)
