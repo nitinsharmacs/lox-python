@@ -14,7 +14,7 @@ class AstPrinter(Visitor):
         return self.__print(expr.operator.lexeme, expr.right)
 
     def visitLiteral(self, expr: Literal):
-        return "nil" if expr.value == None else str(expr.value)
+        return stringify(expr.value)
 
     def visitGrouping(self, expr: Grouping):
         return self.__print("group", expr.expr)
@@ -50,3 +50,24 @@ if __name__ == "__main__":
     )
 
     printer.print(ast2)
+
+
+def print_errors(errors: list[Exception]):
+    for error in errors:
+        print(error)
+
+
+def stringify(value):
+    if value == None:
+        return "nil"
+    if type(value) is float:
+        str_equiv = str(value)
+        if str_equiv.endswith(".0"):
+            return str_equiv[:-2]
+    if type(value) is bool:
+        if value:
+            return "true"
+        else:
+            return "false"
+
+    return str(value)
