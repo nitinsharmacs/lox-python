@@ -215,7 +215,7 @@ class Parser:
             return Grouping(expr)
 
         if self.match_any(TokenType.IDENTIFIER):
-            return Variable(self.peek())
+            return Variable(self.previous())
 
         error = SyntaxError(self.peek(), "Expected expression.")
         self.errors.append(error)

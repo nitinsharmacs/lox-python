@@ -29,6 +29,9 @@ class AstPrinter(ExprVisitor):
         result += ")"
         return result
 
+    def visit_variable(self, expr) -> Expr:
+        raise NotImplementedError
+
 
 if __name__ == "__main__":
     ast1 = Binary(

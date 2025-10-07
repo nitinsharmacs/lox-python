@@ -1,27 +1,54 @@
+# type: ignore
+
+from typing import Any
 from src.lox.ast_printer import stringify
-from src.lox.expr import Binary, Expr, ExprVisitor, Grouping, Literal, Unary
-from src.lox.stmt import Stmt, StmtVisitor
+from src.lox.expr import (
+    Binary,
+    Expr,
+    ExprVisitor,
+    Grouping,
+    Literal,
+    Unary,
+    Variable,
+)
+from src.lox.stmt import Stmt, StmtVisitor, VarDeclStmt
 from src.lox.token import TokenType, Token
 
 
 class RuntimeException(Exception):
     def __init__(self, token: Token, msg: str, *args):
         self.token = token
-        super().__init__(
-            f"Char '{token.lexeme}' at line {token.line}, {msg}", *args
-        )
+        super().__init__(f"'{token.lexeme}' at line {token.line}, {msg}", *args)
 
 
 class DivideByZeroException(RuntimeException):
     pass
 
 
+class ReferenceException(RuntimeException):
+    pass
+
+
 class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self):
         self.errors = []
+        self.env = {}
 
-    def evaluate(self, stmt: Stmt):
+    def evaluate(self, stmt: Stmt | Expr):
         return stmt.accept(self)
+
+    def visit_var_decl_stmt(self, stmt: VarDeclStmt):
+        value = None
+        if stmt.expr is not None:
+            value = self.evaluate(stmt.expr)
+
+        self.env[stmt.identifier.lexeme] = value
+
+    def visit_variable(self, expr: Variable):
+        try:
+            return self.env[expr.name.lexeme]
+        except Exception as _:
+            raise ReferenceException(expr.name, "Undefined Variable.")
 
     def visit_expr_stmt(self, expr_stmt):
         self.evaluate(expr_stmt.expr)

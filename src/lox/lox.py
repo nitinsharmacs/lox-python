@@ -10,6 +10,7 @@ class Lox:
     def __init__(self):
         self.had_errors = False
         self.had_runtime_errors = False
+        self.interpreter = Interpreter()
 
     def run(self, code: str):
         scanner = Scanner(code)
@@ -28,14 +29,12 @@ class Lox:
             print_errors(parser.errors)
             return
 
-        print(stmts)
-        # interpreter = Interpreter()
-        # interpreter.interpret(stmts)
+        self.interpreter.interpret(stmts)
 
-        # if interpreter.has_error:
-        #     print_errors(interpreter.errors)
-        #     self.had_runtime_errors = True
-        #     return
+        if self.interpreter.has_error:
+            print_errors(self.interpreter.errors)
+            self.had_runtime_errors = True
+            return
 
     def run_file(self, file: str):
         with open(file, "r", encoding="utf-8") as _file:

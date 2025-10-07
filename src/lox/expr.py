@@ -6,23 +6,23 @@ from src.lox.token import Token, TokenType
 
 class ExprVisitor(ABC):
     @abstractmethod
-    def visit_binary(self, expr) -> Expr:
+    def visit_binary(self, expr: Binary):
         pass
 
     @abstractmethod
-    def visit_unary(self, expr) -> Expr:
+    def visit_unary(self, expr: Unary):
         pass
 
     @abstractmethod
-    def visit_grouping(self, expr) -> Expr:
+    def visit_grouping(self, expr: Grouping):
         pass
 
     @abstractmethod
-    def visit_literal(self, expr) -> Expr:
+    def visit_literal(self, expr: Literal):
         pass
 
     @abstractmethod
-    def visit_variable(self, expr) -> Expr:
+    def visit_variable(self, expr: Variable):
         pass
 
 
