@@ -1,32 +1,42 @@
-from src.lox.ast import Binary, Expr, Grouping, Literal, Unary
-from src.lox.common import Visitor
+from src.lox.ast_printer import stringify
+from src.lox.expr import Binary, Expr, ExprVisitor, Grouping, Literal, Unary
+from src.lox.stmt import Stmt, StmtVisitor
 from src.lox.token import TokenType, Token
 
 
 class RuntimeException(Exception):
     def __init__(self, token: Token, msg: str, *args):
         self.token = token
-        super().__init__(f"Char '{token.lexeme}' at line: {token.line}, {msg}", *args)
+        super().__init__(
+            f"Char '{token.lexeme}' at line: {token.line}, {msg}", *args
+        )
 
 
 class DivideByZeroException(RuntimeException):
     pass
 
 
-class Interpreter(Visitor):
+class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self):
         self.errors = []
 
-    def evaluate(self, ast: Expr):
-        return ast.accept(self)
+    def evaluate(self, stmt: Stmt):
+        return stmt.accept(self)
 
-    def visitLiteral(self, expr: Literal):
+    def visit_expr_stmt(self, expr_stmt):
+        self.evaluate(expr_stmt.expr)
+
+    def visit_print_stmt(self, print_stmt):
+        result = self.evaluate(print_stmt.expr)
+        print(stringify(result))
+
+    def visit_literal(self, expr: Literal):
         return expr.value
 
-    def visitGrouping(self, expr: Grouping):
+    def visit_grouping(self, expr: Grouping):
         return self.evaluate(expr.expr)
 
-    def visitBinary(self, expr: Binary):
+    def visit_binary(self, expr: Binary):
         left_operand = self.evaluate(expr.left)
         right_operand = self.evaluate(expr.right)
 
@@ -85,16 +95,17 @@ class Interpreter(Visitor):
             case TokenType.BANG_EQUAL:
                 return left_operand != right_operand
 
-    def visitUnary(self, expr: Unary):
+    def visit_unary(self, expr: Unary):
         match expr.operator.type:
             case TokenType.MINUS:
                 return -(self.evaluate(expr.right))
             case TokenType.BANG:
                 return not self.evaluate(expr.right)
 
-    def interpret(self, ast: Expr):
+    def interpret(self, stmts: list[Stmt]):
         try:
-            return self.evaluate(ast)
+            for stmt in stmts:
+                self.evaluate(stmt)
         except RuntimeException as exp:
             self.errors = [exp]
 

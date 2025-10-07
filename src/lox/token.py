@@ -53,14 +53,16 @@ class TokenType(Enum):
 
 
 class Token:
-    def __init__(self, type: TokenType, line: int, literal: typing.Any, lexeme: str):
+    def __init__(
+        self, type: TokenType, line: int, literal: typing.Any, lexeme: str
+    ):
         self.type = type
         self.line = line
         self.literal = literal
         self.lexeme = lexeme
 
     def __str__(self):
-        return self.lexeme + " " + self.literal
+        return self.lexeme + " " + str(self.literal)
 
 
 KEYWORDS = {

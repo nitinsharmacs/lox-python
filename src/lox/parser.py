@@ -1,5 +1,7 @@
-from src.lox.ast import Expr, Grouping
-from src.lox.ast import Binary, Literal, Unary
+from src.lox.ast_printer import AstPrinter
+from src.lox.expr import Expr, Grouping
+from src.lox.expr import Binary, Literal, Unary
+from src.lox.stmt import ExprStmt, PrintStmt, Stmt
 from src.lox.token import Token, TokenType
 
 
@@ -34,14 +36,31 @@ class Parser:
     def check(self, token_type: TokenType) -> bool:
         return False if self.is_at_end() else self.peek().type == token_type
 
-    def match_any(self, *tokens_type: list[TokenType]) -> bool:
-        for type in tokens_type:
-            if self.check(type):
+    def match_any(self, *tokens_type: TokenType) -> bool:
+        for token_type in tokens_type:
+            if self.check(token_type):
                 self.advance()
                 return True
         return False
 
     ## end of parsing infrastructure
+
+    def statement(self) -> Stmt:
+        if self.match_any(TokenType.PRINT):
+            return self.print_stmt()
+        return self.expr_stmt()
+
+    def print_stmt(self) -> Stmt:
+        expr = self.expression()
+
+        if self.consume(TokenType.SEMICOLON, "Expected ';' after value."):
+            return PrintStmt(expr)
+
+    def expr_stmt(self) -> Stmt:
+        expr = self.expression()
+
+        if self.consume(TokenType.SEMICOLON, "Expected ';' after expression."):
+            return ExprStmt(expr)
 
     def expression(self) -> Expr:
         return self.equality()
@@ -140,7 +159,7 @@ class Parser:
         if self.match_any(TokenType.LEFT_PAREN):
             expr = self.expression()
 
-            if self.check(TokenType.RIGHT_PAREN):
+            if self.match_any(TokenType.RIGHT_PAREN):
                 return Grouping(expr)
             else:
                 return self.errors.append(
@@ -148,6 +167,16 @@ class Parser:
                 )
 
         self.errors.append(SyntaxError(self.peek(), "Expected expression."))
+
+    def consume(self, token_type: TokenType, error_msg: str) -> bool:
+        """
+        Consume the current token. Store error if token type does not match.
+        """
+        if self.match_any(token_type):
+            return True
+
+        self.errors.append(SyntaxError(self.previous(), error_msg))
+        return False
 
     def synchronize(self):
         """
@@ -179,4 +208,9 @@ class Parser:
             self.advance()
 
     def parse(self) -> Expr:
-        return self.expression()
+        statements = []
+
+        while not self.is_at_end():
+            statements.append(self.statement())
+
+        return statements

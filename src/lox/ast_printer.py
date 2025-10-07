@@ -1,22 +1,21 @@
-from src.lox.common import Visitor
-from src.lox.ast import Binary, Expr, Grouping, Literal, Unary
+from src.lox.expr import Binary, Expr, ExprVisitor, Grouping, Literal, Unary
 from src.lox.token import Token, TokenType
 
 
-class AstPrinter(Visitor):
+class AstPrinter(ExprVisitor):
     def print(self, expr: Expr):
         print(expr.accept(self))
 
-    def visitBinary(self, expr: Binary):
+    def visit_binary(self, expr: Binary):
         return self.__print(expr.operator.lexeme, expr.left, expr.right)
 
-    def visitUnary(self, expr: Unary):
+    def visit_unary(self, expr: Unary):
         return self.__print(expr.operator.lexeme, expr.right)
 
-    def visitLiteral(self, expr: Literal):
+    def visit_literal(self, expr: Literal):
         return stringify(expr.value)
 
-    def visitGrouping(self, expr: Grouping):
+    def visit_grouping(self, expr: Grouping):
         return self.__print("group", expr.expr)
 
     def __print(self, name, *exprs: Expr):
@@ -42,10 +41,10 @@ if __name__ == "__main__":
 
     ast2: Expr = Binary(
         Unary(
-            Token(TokenType.MINUS, "1", None, "-"),
+            Token(TokenType.MINUS, 1, None, "-"),
             Literal(Token(TokenType.NUMBER, 1, 123, "123")),
         ),
-        Token(TokenType.STAR, "1", None, "+"),
+        Token(TokenType.STAR, 1, None, "+"),
         Grouping(Literal(Token(TokenType.NUMBER, 1, 45.67, "45.67"))),
     )
 

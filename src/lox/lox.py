@@ -21,7 +21,7 @@ class Lox:
             return
 
         parser = Parser(tokens)
-        ast = parser.parse()
+        stmts = parser.parse()
 
         if len(parser.errors) > 0:
             self.had_errors = True
@@ -29,14 +29,12 @@ class Lox:
             return
 
         interpreter = Interpreter()
-        result = interpreter.interpret(ast)
+        interpreter.interpret(stmts)
 
         if interpreter.has_error:
             print_errors(interpreter.errors)
             self.had_runtime_errors = True
             return
-
-        print(stringify(result))
 
     def run_file(self, file: str):
         with open(file, "r", encoding="utf-8") as _file:
