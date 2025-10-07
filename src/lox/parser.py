@@ -1,14 +1,14 @@
 from src.lox.ast_printer import AstPrinter
-from src.lox.expr import Expr, Grouping
+from src.lox.expr import Expr, Grouping, Variable
 from src.lox.expr import Binary, Literal, Unary
-from src.lox.stmt import ExprStmt, PrintStmt, Stmt
+from src.lox.stmt import ExprStmt, PrintStmt, Stmt, VarDeclStmt
 from src.lox.token import Token, TokenType
 
 
 class SyntaxError(Exception):
     def __init__(self, token: Token, msg: str, *args):
         self.token = token
-        super().__init__(f"Line: {token.line}, {msg}", *args)
+        super().__init__(f"at line {token.line}, {msg}", *args)
 
 
 class Parser:
@@ -45,24 +45,74 @@ class Parser:
 
     ## end of parsing infrastructure
 
+    def declaration(self) -> Stmt | None:
+        """
+        Rule implementation.
+        declaration -> varDecl
+                       | statement
+        """
+        try:
+            if self.match_any(TokenType.VAR):
+                return self.var_declaration()
+
+            return self.statement()
+        except Exception as exp:
+            self.synchronize()
+
+    def var_declaration(self) -> Stmt:
+        """
+        Rule implementation.
+        varDecl -> "var" IDENTIFIER ("=" expression)? ";"
+        """
+        identifier = self.consume(
+            TokenType.IDENTIFIER, "Expect a variable name."
+        )
+
+        initializer = None
+        if self.match_any(TokenType.EQUAL):
+            initializer = self.expression()
+
+        self.consume(TokenType.SEMICOLON, "Expected ';' after value.")
+
+        return VarDeclStmt(identifier, initializer)
+
     def statement(self) -> Stmt:
+        """
+        Rule implementation.
+        statement -> print_stmt
+                     | expr_stmt
+        """
         if self.match_any(TokenType.PRINT):
             return self.print_stmt()
         return self.expr_stmt()
 
     def print_stmt(self) -> Stmt:
+        """
+        Rule implementation.
+        print_stmt -> "print" expression ";"
+        """
         expr = self.expression()
 
-        if self.consume(TokenType.SEMICOLON, "Expected ';' after value."):
-            return PrintStmt(expr)
+        self.consume(TokenType.SEMICOLON, "Expected ';' after value.")
+
+        return PrintStmt(expr)
 
     def expr_stmt(self) -> Stmt:
+        """
+        Rule implemenation.
+        expr_stmt -> expression ";"
+        """
         expr = self.expression()
 
-        if self.consume(TokenType.SEMICOLON, "Expected ';' after expression."):
-            return ExprStmt(expr)
+        self.consume(TokenType.SEMICOLON, "Expected ';' after expression.")
+
+        return ExprStmt(expr)
 
     def expression(self) -> Expr:
+        """
+        Rule implementation.
+        expression -> equality
+        """
         return self.equality()
 
     def equality(self) -> Expr:
@@ -143,8 +193,11 @@ class Parser:
     def primary(self) -> Expr:
         """
         Rule implementation.
-        primary -> STRING | NUMBER | "true" | "false" | "nil"
+        primary -> STRING | NUMBER
+                   | "true" | "false"
+                   | "nil"
                    | "( expression ")"
+                   | IDENTIFIER
         """
 
         if self.match_any(TokenType.TRUE):
@@ -158,25 +211,29 @@ class Parser:
 
         if self.match_any(TokenType.LEFT_PAREN):
             expr = self.expression()
+            self.consume(TokenType.RIGHT_PAREN, "Expected closing ')'.")
+            return Grouping(expr)
 
-            if self.match_any(TokenType.RIGHT_PAREN):
-                return Grouping(expr)
-            else:
-                return self.errors.append(
-                    SyntaxError(self.peek(), "Expected closing ')'.")
-                )
+        if self.match_any(TokenType.IDENTIFIER):
+            return Variable(self.peek())
 
-        self.errors.append(SyntaxError(self.peek(), "Expected expression."))
+        error = SyntaxError(self.peek(), "Expected expression.")
+        self.errors.append(error)
 
-    def consume(self, token_type: TokenType, error_msg: str) -> bool:
+        raise error
+
+    def consume(self, token_type: TokenType, error_msg: str) -> Token:
         """
         Consume the current token. Store error if token type does not match.
         """
-        if self.match_any(token_type):
-            return True
 
-        self.errors.append(SyntaxError(self.previous(), error_msg))
-        return False
+        if self.match_any(token_type):
+            return self.previous()
+
+        error = SyntaxError(self.previous(), error_msg)
+        self.errors.append(error)
+
+        raise error
 
     def synchronize(self):
         """
@@ -207,10 +264,10 @@ class Parser:
                     return
             self.advance()
 
-    def parse(self) -> Expr:
+    def parse(self) -> list[Stmt]:
         statements = []
 
         while not self.is_at_end():
-            statements.append(self.statement())
+            statements.append(self.declaration())
 
         return statements

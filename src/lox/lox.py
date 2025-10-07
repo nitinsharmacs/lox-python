@@ -1,6 +1,6 @@
 import sys
 
-from src.lox.ast_printer import AstPrinter, print_errors, stringify
+from src.lox.ast_printer import print_errors
 from src.lox.interpreter import Interpreter
 from src.lox.parser import Parser
 from src.lox.scanner import Scanner
@@ -16,7 +16,7 @@ class Lox:
         tokens = scanner.scan_tokens()
 
         if len(scanner.errors) > 0:
-            print_errors(parser.errors)
+            print_errors(scanner.errors)
             self.had_errors = True
             return
 
@@ -28,13 +28,14 @@ class Lox:
             print_errors(parser.errors)
             return
 
-        interpreter = Interpreter()
-        interpreter.interpret(stmts)
+        print(stmts)
+        # interpreter = Interpreter()
+        # interpreter.interpret(stmts)
 
-        if interpreter.has_error:
-            print_errors(interpreter.errors)
-            self.had_runtime_errors = True
-            return
+        # if interpreter.has_error:
+        #     print_errors(interpreter.errors)
+        #     self.had_runtime_errors = True
+        #     return
 
     def run_file(self, file: str):
         with open(file, "r", encoding="utf-8") as _file:

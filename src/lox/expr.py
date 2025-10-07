@@ -21,6 +21,10 @@ class ExprVisitor(ABC):
     def visit_literal(self, expr) -> Expr:
         pass
 
+    @abstractmethod
+    def visit_variable(self, expr) -> Expr:
+        pass
+
 
 class Expr(ABC):
     @abstractmethod
@@ -67,3 +71,11 @@ class Grouping(Expr):
 
     def accept(self, visitor):
         return visitor.visit_grouping(self)
+
+
+class Variable(Expr):
+    def __init__(self, name: Token):
+        self.name = name
+
+    def accept(self, visitor: ExprVisitor) -> Any:
+        return visitor.visit_variable(self)

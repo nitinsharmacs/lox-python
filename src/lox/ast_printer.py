@@ -53,7 +53,9 @@ if __name__ == "__main__":
 
 def print_errors(errors: list[Exception]):
     for error in errors:
-        print(error)
+        msg = str(error)
+        error_type = str(error.__class__.__name__)
+        print(error_type + ": " + msg)
 
 
 def stringify(value):

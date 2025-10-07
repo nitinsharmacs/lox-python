@@ -9,7 +9,7 @@ class TokenError(Exception):
         self.msg = msg or "Unexpected character"
         self.line = line
         self.char = char
-        super().__init__(f"Line: {self.line}, {self.msg}: {self.char}", *args)
+        super().__init__(f"at line {self.line}, {self.msg}: {self.char}", *args)
 
 
 class UnterminatedStringError(TokenError):
@@ -29,7 +29,7 @@ class Scanner:
         self.current = 0
         self.line = 1
 
-        self.errors: list[TokenError] = []
+        self.errors: list[Exception] = []
 
     def has_more(self) -> bool:
         return self.current < len(self.source_code)
@@ -126,7 +126,9 @@ class Scanner:
                 self.line += 1
 
             if char == "\0":
-                self.errors.append(TokenError(self.line, "", "Unterminated comment"))
+                self.errors.append(
+                    TokenError(self.line, "", "Unterminated comment")
+                )
                 break
 
             self.advance()
@@ -157,7 +159,9 @@ class Scanner:
                 self.add_token(TokenType.STAR)
             case "=":
                 self.add_token(
-                    TokenType.EQUAL_EQUAL if self.match("=") else TokenType.EQUAL
+                    TokenType.EQUAL_EQUAL
+                    if self.match("=")
+                    else TokenType.EQUAL
                 )
             case "!":
                 self.add_token(
@@ -165,7 +169,9 @@ class Scanner:
                 )
             case ">":
                 self.add_token(
-                    TokenType.GREATER_EQUAL if self.match("=") else TokenType.GREATER
+                    TokenType.GREATER_EQUAL
+                    if self.match("=")
+                    else TokenType.GREATER
                 )
             case "<":
                 self.add_token(
@@ -192,7 +198,6 @@ class Scanner:
                 else:
                     error = TokenError(self.line, char)
                     self.errors.append(error)
-                    print(error)
 
     def scan_tokens(self) -> list[Token]:
         while self.has_more():
