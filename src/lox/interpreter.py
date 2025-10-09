@@ -2,7 +2,9 @@
 
 from typing import Any
 from src.lox.ast_printer import stringify
+from src.lox.env import Environment
 from src.lox.expr import (
+    Assignment,
     Binary,
     Expr,
     ExprVisitor,
@@ -31,8 +33,8 @@ class ReferenceException(RuntimeException):
 
 class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self):
-        self.errors = []
-        self.env = {}
+        self.errors: [Exception] = []
+        self.env = Environment()
 
     def evaluate(self, stmt: Stmt | Expr):
         return stmt.accept(self)
@@ -42,11 +44,11 @@ class Interpreter(ExprVisitor, StmtVisitor):
         if stmt.expr is not None:
             value = self.evaluate(stmt.expr)
 
-        self.env[stmt.identifier.lexeme] = value
+        self.env.put(stmt.identifier.lexeme, value)
 
     def visit_variable(self, expr: Variable):
         try:
-            return self.env[expr.name.lexeme]
+            return self.env.get(expr.name.lexeme)
         except Exception as _:
             raise ReferenceException(expr.name, "Undefined Variable.")
 
@@ -56,6 +58,14 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_print_stmt(self, print_stmt):
         result = self.evaluate(print_stmt.expr)
         print(stringify(result))
+
+    def visit_assignment(self, expr: Assignment):
+        if not self.env.has(expr.name.lexeme):
+            raise ReferenceException(
+                expr.name, "Cannot assign to undefined Variable."
+            )
+
+        self.env.put(expr.name.lexeme, self.evaluate(expr.value))
 
     def visit_literal(self, expr: Literal):
         return expr.value
@@ -135,6 +145,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 self.evaluate(stmt)
         except RuntimeException as exp:
             self.errors = [exp]
+
+    def reset_errors(self):
+        self.errors = []
 
     @staticmethod
     def assert_numerical_operands(token: Token, left, right):

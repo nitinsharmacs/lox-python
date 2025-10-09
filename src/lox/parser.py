@@ -1,5 +1,5 @@
 from src.lox.ast_printer import AstPrinter
-from src.lox.expr import Expr, Grouping, Variable
+from src.lox.expr import Assignment, Expr, Grouping, Variable
 from src.lox.expr import Binary, Literal, Unary
 from src.lox.stmt import ExprStmt, PrintStmt, Stmt, VarDeclStmt
 from src.lox.token import Token, TokenType
@@ -111,9 +111,30 @@ class Parser:
     def expression(self) -> Expr:
         """
         Rule implementation.
-        expression -> equality
+        expression -> assignment
         """
-        return self.equality()
+        return self.assignment()
+
+    def assignment(self) -> Expr:
+        """
+        Rule implementation.
+        assignment -> IDENTIFIER "=" assignment
+                      | equality
+        """
+        expr = self.equality()
+
+        if self.match_any(TokenType.EQUAL):
+            token = self.previous()
+            if type(expr) is Variable:
+                value = self.assignment()
+                return Assignment(expr.name, value)
+            self.errors.append(
+                SyntaxError(
+                    token, "Invalid assignment. Did you mean to use '=='?"
+                )
+            )
+
+        return expr
 
     def equality(self) -> Expr:
         """

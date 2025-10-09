@@ -25,6 +25,10 @@ class ExprVisitor(ABC):
     def visit_variable(self, expr: Variable):
         pass
 
+    @abstractmethod
+    def visit_assignment(self, expr: Assignment):
+        pass
+
 
 class Expr(ABC):
     @abstractmethod
@@ -79,3 +83,12 @@ class Variable(Expr):
 
     def accept(self, visitor: ExprVisitor) -> Any:
         return visitor.visit_variable(self)
+
+
+class Assignment(Expr):
+    def __init__(self, name: Token, value: Expr):
+        self.name = name
+        self.value = value
+
+    def accept(self, visitor: ExprVisitor) -> Any:
+        return visitor.visit_assignment(self)
