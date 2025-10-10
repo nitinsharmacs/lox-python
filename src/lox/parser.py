@@ -1,7 +1,7 @@
 from src.lox.ast_printer import AstPrinter
 from src.lox.expr import Assignment, Expr, Grouping, Variable
 from src.lox.expr import Binary, Literal, Unary
-from src.lox.stmt import ExprStmt, PrintStmt, Stmt, VarDeclStmt
+from src.lox.stmt import BlockStmt, ExprStmt, PrintStmt, Stmt, VarDeclStmt
 from src.lox.token import Token, TokenType
 
 
@@ -79,11 +79,16 @@ class Parser:
     def statement(self) -> Stmt:
         """
         Rule implementation.
-        statement -> print_stmt
-                     | expr_stmt
+        statement -> printStmt
+                     | exprStmt
+                     | blockStmt
         """
         if self.match_any(TokenType.PRINT):
             return self.print_stmt()
+
+        if self.match_any(TokenType.LEFT_BRACE):
+            return BlockStmt(self.block_stmt())
+
         return self.expr_stmt()
 
     def print_stmt(self) -> Stmt:
@@ -107,6 +112,19 @@ class Parser:
         self.consume(TokenType.SEMICOLON, "Expected ';' after expression.")
 
         return ExprStmt(expr)
+
+    def block_stmt(self) -> list[Stmt]:
+        """
+        Rule implementation.
+        blockStmt -> "{" declaraction* "}"
+        """
+        statements = []
+        while not (self.check(TokenType.RIGHT_BRACE) or self.is_at_end()):
+            statements.append(self.declaration())
+
+        self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close block.")
+
+        return statements
 
     def expression(self) -> Expr:
         """

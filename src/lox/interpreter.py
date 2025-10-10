@@ -13,7 +13,7 @@ from src.lox.expr import (
     Unary,
     Variable,
 )
-from src.lox.stmt import Stmt, StmtVisitor, VarDeclStmt
+from src.lox.stmt import BlockStmt, Stmt, StmtVisitor, VarDeclStmt
 from src.lox.token import TokenType, Token
 
 
@@ -39,6 +39,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def evaluate(self, stmt: Stmt | Expr):
         return stmt.accept(self)
 
+    ## ----------- statements start ----------------
     def visit_var_decl_stmt(self, stmt: VarDeclStmt):
         value = None
         if stmt.expr is not None:
@@ -59,13 +60,28 @@ class Interpreter(ExprVisitor, StmtVisitor):
         result = self.evaluate(print_stmt.expr)
         print(stringify(result))
 
+    def visit_block_stmt(self, stmt: BlockStmt):
+        self.execute_block(stmt.statements, Environment(self.env))
+
+    def execute_block(self, statements: list[Stmt], env: Environment):
+        previous = self.env
+        self.env = env
+        try:
+            for statement in statements:
+                self.evaluate(statement)
+        finally:
+            self.env = previous
+
+    ## ----------- statements end -------------------
+
+    ## ----------- expressions start ----------------
     def visit_assignment(self, expr: Assignment):
-        if not self.env.has(expr.name.lexeme):
+        try:
+            self.env.assign(expr.name.lexeme, self.evaluate(expr.value))
+        except Exception as excp:
             raise ReferenceException(
                 expr.name, "Cannot assign to undefined Variable."
             )
-
-        self.env.put(expr.name.lexeme, self.evaluate(expr.value))
 
     def visit_literal(self, expr: Literal):
         return expr.value
@@ -138,6 +154,8 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 return -(self.evaluate(expr.right))
             case TokenType.BANG:
                 return not self.evaluate(expr.right)
+
+    ## ----------- expressions end ----------------
 
     def interpret(self, stmts: list[Stmt]):
         try:

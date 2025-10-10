@@ -14,6 +14,7 @@ class Lox:
 
     def run(self, code: str):
         self.interpreter.reset_errors()
+
         scanner = Scanner(code)
         tokens = scanner.scan_tokens()
 
