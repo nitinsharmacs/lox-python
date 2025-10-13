@@ -1,7 +1,14 @@
 from src.lox.ast_printer import AstPrinter
 from src.lox.expr import Assignment, Expr, Grouping, Variable
 from src.lox.expr import Binary, Literal, Unary
-from src.lox.stmt import BlockStmt, ExprStmt, PrintStmt, Stmt, VarDeclStmt
+from src.lox.stmt import (
+    BlockStmt,
+    ExprStmt,
+    IfStmt,
+    PrintStmt,
+    Stmt,
+    VarDeclStmt,
+)
 from src.lox.token import Token, TokenType
 
 
@@ -82,12 +89,16 @@ class Parser:
         statement -> printStmt
                      | exprStmt
                      | blockStmt
+                     | ifStmt
         """
         if self.match_any(TokenType.PRINT):
             return self.print_stmt()
 
         if self.match_any(TokenType.LEFT_BRACE):
             return BlockStmt(self.block_stmt())
+
+        if self.match_any(TokenType.IF):
+            return self.if_stmt()
 
         return self.expr_stmt()
 
@@ -125,6 +136,24 @@ class Parser:
         self.consume(TokenType.RIGHT_BRACE, "Expected '}' to close block.")
 
         return statements
+
+    def if_stmt(self) -> Stmt:
+        """
+        Rule implementation.
+        ifStmt -> "if" "(" expression ")" statement
+                  ("else" statement)?
+        """
+        self.consume(TokenType.LEFT_PAREN, "Expected '( after if.")
+        condition = self.expression()
+        self.consume(TokenType.RIGHT_PAREN, "Expected ') after if condition.")
+
+        then_branch = self.statement()
+        else_branch = None
+
+        if self.match_any(TokenType.ELSE):
+            else_branch = self.statement()
+
+        return IfStmt(condition, then_branch, else_branch)
 
     def expression(self) -> Expr:
         """
