@@ -1,0 +1,15 @@
+print "Logical or";
+
+print true or true;
+print true or false;
+print false or true;
+
+
+// ---------------------
+
+print "Logical and";
+
+print true and true;
+print true and false;
+print false and true;
+

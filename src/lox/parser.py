@@ -1,5 +1,5 @@
 from src.lox.ast_printer import AstPrinter
-from src.lox.expr import Assignment, Expr, Grouping, Variable
+from src.lox.expr import Assignment, Expr, Grouping, Logical, Variable
 from src.lox.expr import Binary, Literal, Unary
 from src.lox.stmt import (
     BlockStmt,
@@ -166,9 +166,9 @@ class Parser:
         """
         Rule implementation.
         assignment -> IDENTIFIER "=" assignment
-                      | equality
+                      | logical_or
         """
-        expr = self.equality()
+        expr = self.logical_or()
 
         if self.match_any(TokenType.EQUAL):
             token = self.previous()
@@ -182,6 +182,34 @@ class Parser:
             )
 
         return expr
+
+    def logical_or(self) -> Expr:
+        """
+        Rule implementation.
+        logical_or -> logical_and ("or" logical_and)*
+        """
+        left = self.logical_and()
+
+        if self.match_any(TokenType.OR):
+            token = self.previous()
+            right = self.logical_and()
+            return Logical(left, token, right)
+
+        return left
+
+    def logical_and(self) -> Expr:
+        """
+        Rule implementation.
+        logical_and -> equality ("and" equality)*
+        """
+        left = self.equality()
+
+        if self.match_any(TokenType.AND):
+            token = self.previous()
+            right = self.equality()
+            return Logical(left, token, right)
+
+        return left
 
     def equality(self) -> Expr:
         """

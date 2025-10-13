@@ -1,5 +1,7 @@
 # type: ignore
 
+from ast import And
+import operator
 from typing import Any
 from src.lox.ast_printer import stringify
 from src.lox.env import Environment
@@ -10,6 +12,7 @@ from src.lox.expr import (
     ExprVisitor,
     Grouping,
     Literal,
+    Logical,
     Unary,
     Variable,
 )
@@ -153,6 +156,18 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 return left_operand == right_operand
             case TokenType.BANG_EQUAL:
                 return left_operand != right_operand
+
+    def visit_logical(self, expr: Logical):
+        left_result = self.evaluate(expr.left)
+
+        if expr.operator.type == TokenType.OR:
+            if left_result:
+                return left_result
+        elif expr.operator.type == TokenType.AND:
+            if not left_result:
+                return left_result
+
+        return self.evaluate(expr.right)
 
     def visit_unary(self, expr: Unary):
         match expr.operator.type:
