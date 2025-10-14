@@ -92,6 +92,7 @@ class Parser:
                      | blockStmt
                      | ifStmt
                      | whileStmt
+                     | forStmt
         """
         if self.match_any(TokenType.PRINT):
             return self.print_stmt()
@@ -104,6 +105,9 @@ class Parser:
 
         if self.match_any(TokenType.WHILE):
             return self.while_stmt()
+
+        if self.match_any(TokenType.FOR):
+            return self.for_stmt()
 
         return self.expr_stmt()
 
@@ -174,6 +178,50 @@ class Parser:
         body = self.statement()
 
         return WhileStmt(condition, body)
+
+    def for_stmt(self) -> Stmt:
+        """
+        Rule implementation.
+        forStmt -> "for" "(" (varDecl | exprStmt | ";")
+                    expression? ";"
+                    expression? ")" statement
+        """
+        self.consume(TokenType.LEFT_PAREN, "Expected '( after for.")
+
+        initializer = None
+        if not self.match_any(TokenType.SEMICOLON):
+            if self.match_any(TokenType.VAR):
+                initializer = self.var_declaration()
+            else:
+                initializer = self.expr_stmt()
+
+        condition = None
+        if not self.check(TokenType.SEMICOLON):
+            condition = self.expression()
+
+        self.consume(
+            TokenType.SEMICOLON, "Expected ';' after for loop condition."
+        )
+
+        increment = None
+        if not self.check(TokenType.RIGHT_PAREN):
+            increment = self.expression()
+
+        self.consume(TokenType.RIGHT_PAREN, "Expected ') after for clause.")
+
+        body = self.statement()
+
+        if increment is not None:
+            body = BlockStmt([body, ExprStmt(increment)])
+
+        body = WhileStmt(
+            condition if condition is not None else Literal(True), body
+        )
+
+        if initializer is not None:
+            body = BlockStmt([initializer, body])
+
+        return body
 
     def expression(self) -> Expr:
         """
