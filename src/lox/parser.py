@@ -8,6 +8,7 @@ from src.lox.stmt import (
     PrintStmt,
     Stmt,
     VarDeclStmt,
+    WhileStmt,
 )
 from src.lox.token import Token, TokenType
 
@@ -90,6 +91,7 @@ class Parser:
                      | exprStmt
                      | blockStmt
                      | ifStmt
+                     | whileStmt
         """
         if self.match_any(TokenType.PRINT):
             return self.print_stmt()
@@ -99,6 +101,9 @@ class Parser:
 
         if self.match_any(TokenType.IF):
             return self.if_stmt()
+
+        if self.match_any(TokenType.WHILE):
+            return self.while_stmt()
 
         return self.expr_stmt()
 
@@ -154,6 +159,21 @@ class Parser:
             else_branch = self.statement()
 
         return IfStmt(condition, then_branch, else_branch)
+
+    def while_stmt(self) -> Stmt:
+        """
+        Rule implementation.
+        whileStmt -> "while" "(" expression ")" statement
+        """
+
+        self.consume(TokenType.LEFT_PAREN, "Expected '( after while.")
+        condition = self.expression()
+        self.consume(
+            TokenType.RIGHT_PAREN, "Expected ') after while condition."
+        )
+        body = self.statement()
+
+        return WhileStmt(condition, body)
 
     def expression(self) -> Expr:
         """

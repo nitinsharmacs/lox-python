@@ -16,7 +16,14 @@ from src.lox.expr import (
     Unary,
     Variable,
 )
-from src.lox.stmt import BlockStmt, IfStmt, Stmt, StmtVisitor, VarDeclStmt
+from src.lox.stmt import (
+    BlockStmt,
+    IfStmt,
+    Stmt,
+    StmtVisitor,
+    VarDeclStmt,
+    WhileStmt,
+)
 from src.lox.token import TokenType, Token
 
 
@@ -80,6 +87,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
             self.evaluate(stmt.then_branch)
         elif stmt.else_branch is not None:
             self.evaluate(stmt.else_branch)
+
+    def visit_while_stmt(self, stmt: WhileStmt):
+        while self.evaluate(stmt.condition):
+            self.evaluate(stmt.body)
 
     ## ----------- statements end -------------------
 
