@@ -18,6 +18,7 @@ from src.lox.expr import (
 )
 from src.lox.stmt import (
     BlockStmt,
+    BreakStmt,
     IfStmt,
     Stmt,
     StmtVisitor,
@@ -38,6 +39,10 @@ class DivideByZeroException(RuntimeException):
 
 
 class ReferenceException(RuntimeException):
+    pass
+
+
+class BreakException(Exception):
     pass
 
 
@@ -89,8 +94,14 @@ class Interpreter(ExprVisitor, StmtVisitor):
             self.evaluate(stmt.else_branch)
 
     def visit_while_stmt(self, stmt: WhileStmt):
-        while self.evaluate(stmt.condition):
-            self.evaluate(stmt.body)
+        try:
+            while self.evaluate(stmt.condition):
+                self.evaluate(stmt.body)
+        except Exception as exc:
+            pass
+
+    def visit_break_stmt(self, stmt: BreakStmt):
+        raise BreakException()
 
     ## ----------- statements end -------------------
 

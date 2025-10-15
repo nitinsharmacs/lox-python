@@ -48,7 +48,7 @@ class TokenType(Enum):
     TRUE = auto()
     VAR = auto()
     WHILE = auto()
-
+    BREAK = auto()
     EOF = auto()
 
 
@@ -82,4 +82,5 @@ KEYWORDS = {
     "true": TokenType.TRUE,
     "var": TokenType.VAR,
     "while": TokenType.WHILE,
+    "break": TokenType.BREAK,
 }

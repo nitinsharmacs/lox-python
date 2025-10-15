@@ -3,6 +3,7 @@ from src.lox.expr import Assignment, Expr, Grouping, Logical, Variable
 from src.lox.expr import Binary, Literal, Unary
 from src.lox.stmt import (
     BlockStmt,
+    BreakStmt,
     ExprStmt,
     IfStmt,
     PrintStmt,
@@ -24,6 +25,7 @@ class Parser:
         self.current = 0
         self.tokens = tokens
         self.errors = []
+        self.loop_depth = 0
 
     ## parsing infrastructure
 
@@ -93,6 +95,7 @@ class Parser:
                      | ifStmt
                      | whileStmt
                      | forStmt
+                     | breakStmt
         """
         if self.match_any(TokenType.PRINT):
             return self.print_stmt()
@@ -108,6 +111,9 @@ class Parser:
 
         if self.match_any(TokenType.FOR):
             return self.for_stmt()
+
+        if self.match_any(TokenType.BREAK):
+            return self.break_stmt()
 
         return self.expr_stmt()
 
@@ -175,9 +181,14 @@ class Parser:
         self.consume(
             TokenType.RIGHT_PAREN, "Expected ') after while condition."
         )
-        body = self.statement()
 
-        return WhileStmt(condition, body)
+        try:
+            self.loop_depth += 1
+            body = self.statement()
+
+            return WhileStmt(condition, body)
+        finally:
+            self.loop_depth -= 1
 
     def for_stmt(self) -> Stmt:
         """
@@ -209,19 +220,32 @@ class Parser:
 
         self.consume(TokenType.RIGHT_PAREN, "Expected ') after for clause.")
 
-        body = self.statement()
+        try:
+            self.loop_depth += 1
+            body = self.statement()
 
-        if increment is not None:
-            body = BlockStmt([body, ExprStmt(increment)])
+            if increment is not None:
+                body = BlockStmt([body, ExprStmt(increment)])
 
-        body = WhileStmt(
-            condition if condition is not None else Literal(True), body
-        )
+            body = WhileStmt(
+                condition if condition is not None else Literal(True), body
+            )
 
-        if initializer is not None:
-            body = BlockStmt([initializer, body])
+            if initializer is not None:
+                body = BlockStmt([initializer, body])
 
-        return body
+            return body
+        finally:
+            self.loop_depth -= 1
+
+    def break_stmt(self) -> Stmt:
+        if self.loop_depth == 0:
+            error = SyntaxError(self.previous(), "'break' outside loop.")
+            self.errors.append(error)
+            raise error
+
+        self.consume(TokenType.SEMICOLON, "Expected ';' after expression.")
+        return BreakStmt()
 
     def expression(self) -> Expr:
         """

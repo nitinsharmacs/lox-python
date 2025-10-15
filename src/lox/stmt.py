@@ -31,6 +31,10 @@ class StmtVisitor(ABC):
     def visit_while_stmt(self, stmt: WhileStmt):
         pass
 
+    @abstractmethod
+    def visit_break_stmt(self, stmt: BreakStmt):
+        pass
+
 
 class Stmt(ABC):
     @abstractmethod
@@ -93,3 +97,11 @@ class WhileStmt(Stmt):
 
     def accept(self, visitor: StmtVisitor):
         visitor.visit_while_stmt(self)
+
+
+class BreakStmt(Stmt):
+    def __init__(self) -> None:
+        pass
+
+    def accept(self, visitor: StmtVisitor):
+        visitor.visit_break_stmt(self)

@@ -1,0 +1,11 @@
+var b = 0;
+while (b < 10)
+{
+  print b;
+  if (b == 5)
+    break;
+
+  b = b + 1;
+}
+
+// break; // should throw syntax error
