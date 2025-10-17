@@ -33,6 +33,10 @@ class ExprVisitor(ABC):
     def visit_logical(self, expr: Logical):
         pass
 
+    @abstractmethod
+    def visit_call(self, expr: Call):
+        pass
+
 
 class Expr(ABC):
     @abstractmethod
@@ -106,3 +110,18 @@ class Logical(Expr):
 
     def accept(self, visitor: ExprVisitor) -> Any:
         return visitor.visit_logical(self)
+
+
+class Call(Expr):
+    def __init__(
+        self,
+        callee: Expr,
+        arguments: list[Expr],
+        token: Token,
+    ) -> None:
+        self.callee = callee
+        self.arguments = arguments
+        self.token = token
+
+    def accept(self, visitor: ExprVisitor) -> Any:
+        return visitor.visit_call(self)

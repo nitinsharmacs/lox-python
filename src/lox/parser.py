@@ -1,5 +1,5 @@
 from src.lox.ast_printer import AstPrinter
-from src.lox.expr import Assignment, Expr, Grouping, Logical, Variable
+from src.lox.expr import Assignment, Call, Expr, Grouping, Logical, Variable
 from src.lox.expr import Binary, Literal, Unary
 from src.lox.stmt import (
     BlockStmt,
@@ -26,6 +26,7 @@ class Parser:
         self.tokens = tokens
         self.errors = []
         self.loop_depth = 0
+        self.arguments_limit = 10
 
     ## parsing infrastructure
 
@@ -240,8 +241,7 @@ class Parser:
 
     def break_stmt(self) -> Stmt:
         if self.loop_depth == 0:
-            error = SyntaxError(self.previous(), "'break' outside loop.")
-            self.errors.append(error)
+            error = self.new_error(self.previous(), "'break' outside loop.")
             raise error
 
         self.consume(TokenType.SEMICOLON, "Expected ';' after expression.")
@@ -368,7 +368,7 @@ class Parser:
         """
         Rule implementation.
         unary -> ("-"|"!") unary
-                | primary
+                | call
         """
 
         if self.match_any(TokenType.MINUS, TokenType.BANG):
@@ -376,7 +376,44 @@ class Parser:
             operand = self.unary()
             return Unary(operator, operand)
 
-        return self.primary()
+        return self.call()
+
+    def call(self) -> Expr:
+        """
+        Rule implementation.
+        call -> primary ("(" arguments? ")")*
+        """
+        expr = self.primary()
+
+        while self.match_any(TokenType.LEFT_PAREN):
+            args = self.arguments()
+
+            token = self.consume(
+                TokenType.RIGHT_PAREN, "Expected closing ')' after args."
+            )
+            expr = Call(expr, args, token)
+
+        return expr
+
+    def arguments(self) -> list[Expr]:
+        """
+        Rule implementation.
+        arguments -> expression ("," expression)*
+        """
+        args = []
+
+        if not self.check(TokenType.RIGHT_PAREN):
+            args.append(self.expression())
+
+            while self.match_any(TokenType.COMMA):
+                if len(args) >= self.arguments_limit:
+                    self.new_error(
+                        self.peek(),
+                        f"Can't have more than {self.arguments_limit}.",
+                    )
+                args.append(self.expression())
+
+        return args
 
     def primary(self) -> Expr:
         """
@@ -405,10 +442,14 @@ class Parser:
         if self.match_any(TokenType.IDENTIFIER):
             return Variable(self.previous())
 
-        error = SyntaxError(self.peek(), "Expected expression.")
-        self.errors.append(error)
+        error = self.new_error(self.peek(), "Expected expression.")
 
         raise error
+
+    def new_error(self, token: Token, msg) -> Exception:
+        error = SyntaxError(token, msg)
+        self.errors.append(error)
+        return error
 
     def consume(self, token_type: TokenType, error_msg: str) -> Token:
         """
@@ -418,8 +459,7 @@ class Parser:
         if self.match_any(token_type):
             return self.previous()
 
-        error = SyntaxError(self.previous(), error_msg)
-        self.errors.append(error)
+        error = self.new_error(self.previous(), error_msg)
 
         raise error
 

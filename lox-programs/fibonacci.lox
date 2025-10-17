@@ -1,0 +1,14 @@
+var n = 50;
+var num1 = 0;
+var num2 = 1;
+var nextNum;
+
+
+print "Fibonacci Series: ";
+
+for (var i = 1; i <= n; i = i + 1) {
+  print num1; // Print the current number
+  nextNum = num1 + num2; // Calculate the next number
+  num1 = num2;         // Update num1 to the previous num2
+  num2 = nextNum;        // Update num2 to the new sum
+}

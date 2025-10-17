@@ -4,10 +4,12 @@ from ast import And
 import operator
 from typing import Any
 from src.lox.ast_printer import stringify
+from src.lox.callable import Callable
 from src.lox.env import Environment
 from src.lox.expr import (
     Assignment,
     Binary,
+    Call,
     Expr,
     ExprVisitor,
     Grouping,
@@ -16,6 +18,7 @@ from src.lox.expr import (
     Unary,
     Variable,
 )
+from src.lox.natives import set_natives
 from src.lox.stmt import (
     BlockStmt,
     BreakStmt,
@@ -49,7 +52,11 @@ class BreakException(Exception):
 class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self):
         self.errors: [Exception] = []
-        self.env = Environment()
+        self.env_global = Environment()
+
+        set_natives(self.env_global)
+
+        self.env = self.env_global
 
     def evaluate(self, stmt: Stmt | Expr):
         return stmt.accept(self)
@@ -113,6 +120,24 @@ class Interpreter(ExprVisitor, StmtVisitor):
             raise ReferenceException(
                 expr.name, "Cannot assign to undefined Variable."
             )
+
+    def visit_call(self, expr: Call) -> Any:
+        callee = self.evaluate(expr.callee)
+
+        if not isinstance(callee, Callable):
+            raise RuntimeException(
+                expr.token, "Only functions and classes are callable."
+            )
+
+        if len(expr.arguments) > callee.arity:
+            raise RuntimeException(
+                expr.token,
+                f"Expected {callee.arity} arguments, but got {len(expr.arguments)}",
+            )
+
+        args = map(self.evaluate, expr.arguments)
+
+        return callee.call(self, list(args))
 
     def visit_literal(self, expr: Literal):
         return expr.value
