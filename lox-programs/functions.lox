@@ -4,8 +4,20 @@ fun hello_world() {
 
 hello_world();
 
-fun is_even(a) {
-  print true;
+fun add(a, b) {
+  print a + b;
 }
 
-is_even(2);
+add(2, 5);
+
+fun callme(fn) {
+  fn();
+}
+
+callme(hello_world);
+
+fun sub(a, b) {
+  return a - b;
+}
+
+print sub(4, 2);

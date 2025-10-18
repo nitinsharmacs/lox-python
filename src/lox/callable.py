@@ -9,6 +9,12 @@ if TYPE_CHECKING:
     from src.lox.interpreter import Interpreter
 
 
+class Return(Exception):
+    def __init__(self, value, *args: object) -> None:
+        self.value = value
+        super().__init__(*args)
+
+
 class Callable(ABC):
     @abstractmethod
     def call(self, interpreter: Interpreter, args: list[Any]) -> Any:
@@ -25,12 +31,15 @@ class LoxFunction(Callable):
         self.funStmt = funStmt
 
     def call(self, interpreter: Interpreter, args: list[Any]) -> Any:
-        env = Environment()
+        env = Environment(interpreter.env_global)
 
         for i, param in enumerate(self.funStmt.params):
             env.put(param.lexeme, args[i])
 
-        interpreter.execute_block(self.funStmt.body, env)
+        try:
+            interpreter.execute_block(self.funStmt.body, env)
+        except Return as ret:
+            return ret.value
 
     @property
     def arity(self) -> int:

@@ -4,7 +4,7 @@ from ast import And
 import operator
 from typing import Any
 from src.lox.ast_printer import stringify
-from src.lox.callable import Callable, LoxFunction
+from src.lox.callable import Callable, LoxFunction, Return
 from src.lox.env import Environment
 from src.lox.expr import (
     Assignment,
@@ -24,6 +24,7 @@ from src.lox.stmt import (
     BreakStmt,
     FunDeclStmt,
     IfStmt,
+    ReturnStmt,
     Stmt,
     StmtVisitor,
     VarDeclStmt,
@@ -105,7 +106,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         try:
             while self.evaluate(stmt.condition):
                 self.evaluate(stmt.body)
-        except Exception as exc:
+        except BreakException as exc:
             pass
 
     def visit_break_stmt(self, stmt: BreakStmt):
@@ -114,6 +115,11 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_fun_decl(self, stmt: FunDeclStmt):
         fun = LoxFunction(stmt)
         self.env.put(stmt.name.lexeme, fun)
+
+    def visit_return_stmt(self, stmt: ReturnStmt):
+        raise Return(
+            self.evaluate(stmt.value) if stmt.value is not None else None
+        )
 
     ## ----------- statements end -------------------
 

@@ -8,6 +8,7 @@ from src.lox.stmt import (
     FunDeclStmt,
     IfStmt,
     PrintStmt,
+    ReturnStmt,
     Stmt,
     VarDeclStmt,
     WhileStmt,
@@ -149,6 +150,7 @@ class Parser:
                      | whileStmt
                      | forStmt
                      | breakStmt
+                     | returnStmt
         """
         if self.match_any(TokenType.PRINT):
             return self.print_stmt()
@@ -167,6 +169,9 @@ class Parser:
 
         if self.match_any(TokenType.BREAK):
             return self.break_stmt()
+
+        if self.match_any(TokenType.RETURN):
+            return self.return_stmt()
 
         return self.expr_stmt()
 
@@ -298,6 +303,21 @@ class Parser:
 
         self.consume(TokenType.SEMICOLON, "Expected ';' after expression.")
         return BreakStmt()
+
+    def return_stmt(self) -> Stmt:
+        """
+        Rule implementation.
+        returnStmt -> "return" expression? ";"
+        """
+        token = self.previous()
+
+        value = None
+        if not self.check(TokenType.SEMICOLON):
+            value = self.expression()
+
+        self.consume(TokenType.SEMICOLON, "Expected ';' after expression.")
+
+        return ReturnStmt(token, value)
 
     def expression(self) -> Expr:
         """
