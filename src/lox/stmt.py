@@ -35,6 +35,10 @@ class StmtVisitor(ABC):
     def visit_break_stmt(self, stmt: BreakStmt):
         pass
 
+    @abstractmethod
+    def visit_fun_decl(self, stmt: FunDeclStmt):
+        pass
+
 
 class Stmt(ABC):
     @abstractmethod
@@ -105,3 +109,15 @@ class BreakStmt(Stmt):
 
     def accept(self, visitor: StmtVisitor):
         visitor.visit_break_stmt(self)
+
+
+class FunDeclStmt(Stmt):
+    def __init__(
+        self, name: Token, params: list[Token], body: list[Stmt]
+    ) -> None:
+        self.name = name
+        self.params = params
+        self.body = body
+
+    def accept(self, visitor: StmtVisitor):
+        return visitor.visit_fun_decl(self)

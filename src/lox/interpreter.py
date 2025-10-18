@@ -4,7 +4,7 @@ from ast import And
 import operator
 from typing import Any
 from src.lox.ast_printer import stringify
-from src.lox.callable import Callable
+from src.lox.callable import Callable, LoxFunction
 from src.lox.env import Environment
 from src.lox.expr import (
     Assignment,
@@ -22,6 +22,7 @@ from src.lox.natives import set_natives
 from src.lox.stmt import (
     BlockStmt,
     BreakStmt,
+    FunDeclStmt,
     IfStmt,
     Stmt,
     StmtVisitor,
@@ -109,6 +110,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_break_stmt(self, stmt: BreakStmt):
         raise BreakException()
+
+    def visit_fun_decl(self, stmt: FunDeclStmt):
+        fun = LoxFunction(stmt)
+        self.env.put(stmt.name.lexeme, fun)
 
     ## ----------- statements end -------------------
 

@@ -1,0 +1,11 @@
+fun hello_world() {
+  print "Hello world";
+}
+
+hello_world();
+
+fun is_even(a) {
+  print true;
+}
+
+is_even(2);

@@ -5,6 +5,7 @@ from src.lox.stmt import (
     BlockStmt,
     BreakStmt,
     ExprStmt,
+    FunDeclStmt,
     IfStmt,
     PrintStmt,
     Stmt,
@@ -60,9 +61,13 @@ class Parser:
         """
         Rule implementation.
         declaration -> varDecl
+                       | funDecl
                        | statement
         """
         try:
+            if self.match_any(TokenType.FUN):
+                return self.function("function")
+
             if self.match_any(TokenType.VAR):
                 return self.var_declaration()
 
@@ -87,6 +92,53 @@ class Parser:
 
         return VarDeclStmt(identifier, initializer)
 
+    def function(self, kind: str) -> FunDeclStmt:
+        """
+        Rule implementation.
+        funDec -> "fun" function
+        function -> IDENTIFIER "(" parameters? ")" blockStmt
+        """
+
+        name = self.consume(TokenType.IDENTIFIER, f"Expected '{kind}' name.")
+        self.consume(TokenType.LEFT_PAREN, f"Expect '(' after '{kind}' name.")
+
+        params = self.parameters()
+
+        self.consume(TokenType.RIGHT_PAREN, f"Expected ')' after parameters.")
+        self.consume(
+            TokenType.LEFT_BRACE, "Expecetd '{' " + f"before {kind} body."
+        )
+        body = self.block()
+
+        return FunDeclStmt(name, params, body)
+
+    def parameters(self) -> list[Token]:
+        """
+        Rule implementation.
+        parameters -> IDENTIFIER ("," IDENTIFIER)*
+        """
+
+        params = []
+
+        if not self.check(TokenType.RIGHT_PAREN):
+            params.append(
+                self.consume(TokenType.IDENTIFIER, "Expect paramenter name.")
+            )
+
+            while self.match_any(TokenType.COMMA):
+                if len(params) >= self.arguments_limit:
+                    self.new_error(
+                        self.peek(),
+                        f"Can't have more than {self.arguments_limit}.",
+                    )
+                params.append(
+                    self.consume(
+                        TokenType.IDENTIFIER, "Expect paramenter name."
+                    )
+                )
+
+        return params
+
     def statement(self) -> Stmt:
         """
         Rule implementation.
@@ -102,7 +154,7 @@ class Parser:
             return self.print_stmt()
 
         if self.match_any(TokenType.LEFT_BRACE):
-            return BlockStmt(self.block_stmt())
+            return BlockStmt(self.block())
 
         if self.match_any(TokenType.IF):
             return self.if_stmt()
@@ -140,7 +192,7 @@ class Parser:
 
         return ExprStmt(expr)
 
-    def block_stmt(self) -> list[Stmt]:
+    def block(self) -> list[Stmt]:
         """
         Rule implementation.
         blockStmt -> "{" declaraction* "}"
