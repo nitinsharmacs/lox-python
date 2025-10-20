@@ -113,7 +113,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         raise BreakException()
 
     def visit_fun_decl(self, stmt: FunDeclStmt):
-        fun = LoxFunction(stmt)
+        fun = LoxFunction(stmt, self.env)
         self.env.put(stmt.name.lexeme, fun)
 
     def visit_return_stmt(self, stmt: ReturnStmt):
