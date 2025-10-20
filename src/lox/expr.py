@@ -1,7 +1,10 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from src.lox.token import Token, TokenType
+
+if TYPE_CHECKING:
+    from src.lox.stmt import Stmt
 
 
 class ExprVisitor(ABC):
@@ -35,6 +38,10 @@ class ExprVisitor(ABC):
 
     @abstractmethod
     def visit_call(self, expr: Call):
+        pass
+
+    @abstractmethod
+    def visit_anonymous_fn(self, expr: AnonymousFnExpr):
         pass
 
 
@@ -125,3 +132,12 @@ class Call(Expr):
 
     def accept(self, visitor: ExprVisitor) -> Any:
         return visitor.visit_call(self)
+
+
+class AnonymousFnExpr(Expr):
+    def __init__(self, params: list[Token], body: list[Stmt]) -> None:
+        self.params = params
+        self.body = body
+
+    def accept(self, visitor: ExprVisitor) -> Any:
+        return visitor.visit_anonymous_fn(self)

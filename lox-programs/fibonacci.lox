@@ -1,4 +1,4 @@
-var n = 50;
+var n = 2;
 var num1 = 0;
 var num2 = 1;
 var nextNum;

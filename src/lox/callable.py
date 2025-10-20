@@ -3,9 +3,9 @@ from abc import ABC, abstractmethod
 from typing import Any, TYPE_CHECKING
 
 from src.lox.env import Environment
-from src.lox.stmt import FunDeclStmt
 
 if TYPE_CHECKING:
+    from src.lox.expr import AnonymousFnExpr
     from src.lox.interpreter import Interpreter
 
 
@@ -27,8 +27,14 @@ class Callable(ABC):
 
 
 class LoxFunction(Callable):
-    def __init__(self, funStmt: FunDeclStmt, closure: Environment) -> None:
-        self.funStmt = funStmt
+    def __init__(
+        self,
+        fun: AnonymousFnExpr,
+        closure: Environment,
+        name: str | None = None,
+    ) -> None:
+        self.name = name
+        self.funStmt = fun
         self.closure = closure
 
     def call(self, interpreter: Interpreter, args: list[Any]) -> Any:
@@ -47,4 +53,5 @@ class LoxFunction(Callable):
         return len(self.funStmt.params)
 
     def __str__(self) -> str:
-        return "<" + self.funStmt.name.lexeme + " fn>"
+        name = self.name if self.name is not None else "anonymous"
+        return "<" + name + " fn>"

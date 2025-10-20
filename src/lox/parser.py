@@ -1,5 +1,13 @@
 from src.lox.ast_printer import AstPrinter
-from src.lox.expr import Assignment, Call, Expr, Grouping, Logical, Variable
+from src.lox.expr import (
+    AnonymousFnExpr,
+    Assignment,
+    Call,
+    Expr,
+    Grouping,
+    Logical,
+    Variable,
+)
 from src.lox.expr import Binary, Literal, Unary
 from src.lox.stmt import (
     BlockStmt,
@@ -49,6 +57,13 @@ class Parser:
     def check(self, token_type: TokenType) -> bool:
         return False if self.is_at_end() else self.peek().type == token_type
 
+    def check_next(self, token_type: TokenType) -> bool:
+        return (
+            False
+            if self.is_at_end()
+            else self.tokens[self.current + 1].type == token_type
+        )
+
     def match_any(self, *tokens_type: TokenType) -> bool:
         for token_type in tokens_type:
             if self.check(token_type):
@@ -66,7 +81,10 @@ class Parser:
                        | statement
         """
         try:
-            if self.match_any(TokenType.FUN):
+            if self.check(TokenType.FUN) and self.check_next(
+                TokenType.IDENTIFIER
+            ):
+                self.consume(TokenType.FUN, "")
                 return self.function("function")
 
             if self.match_any(TokenType.VAR):
@@ -97,10 +115,16 @@ class Parser:
         """
         Rule implementation.
         funDec -> "fun" function
-        function -> IDENTIFIER "(" parameters? ")" blockStmt
+        function -> IDENTIFIER anonymous_fn
         """
 
         name = self.consume(TokenType.IDENTIFIER, f"Expected '{kind}' name.")
+
+        fn_body = self.anonymous_fn(kind)
+
+        return FunDeclStmt(name, fn_body)
+
+    def anonymous_fn(self, kind: str) -> Expr:
         self.consume(TokenType.LEFT_PAREN, f"Expect '(' after '{kind}' name.")
 
         params = self.parameters()
@@ -111,7 +135,7 @@ class Parser:
         )
         body = self.block()
 
-        return FunDeclStmt(name, params, body)
+        return AnonymousFnExpr(params, body)
 
     def parameters(self) -> list[Token]:
         """
@@ -495,6 +519,7 @@ class Parser:
                    | "nil"
                    | "( expression ")"
                    | IDENTIFIER
+                   | anonymous_fn
         """
 
         if self.match_any(TokenType.TRUE):
@@ -513,6 +538,9 @@ class Parser:
 
         if self.match_any(TokenType.IDENTIFIER):
             return Variable(self.previous())
+
+        if self.match_any(TokenType.FUN):
+            return self.anonymous_fn("function")
 
         error = self.new_error(self.peek(), "Expected expression.")
 

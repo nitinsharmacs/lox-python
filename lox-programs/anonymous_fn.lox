@@ -1,0 +1,11 @@
+fun isEven(value, predicate) {
+  if (predicate(value)) {
+    print "Even";
+  } else {
+    print "Not even";
+  }
+}
+
+isEven(2, fun (value) {
+  return true;
+});

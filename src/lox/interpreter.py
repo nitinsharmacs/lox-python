@@ -7,6 +7,7 @@ from src.lox.ast_printer import stringify
 from src.lox.callable import Callable, LoxFunction, Return
 from src.lox.env import Environment
 from src.lox.expr import (
+    AnonymousFnExpr,
     Assignment,
     Binary,
     Call,
@@ -113,7 +114,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
         raise BreakException()
 
     def visit_fun_decl(self, stmt: FunDeclStmt):
-        fun = LoxFunction(stmt, self.env)
+        fun = LoxFunction(stmt.declaration, self.env, stmt.name.lexeme)
         self.env.put(stmt.name.lexeme, fun)
 
     def visit_return_stmt(self, stmt: ReturnStmt):
@@ -140,7 +141,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 expr.token, "Only functions and classes are callable."
             )
 
-        if len(expr.arguments) > callee.arity:
+        if len(expr.arguments) != callee.arity:
             raise RuntimeException(
                 expr.token,
                 f"Expected {callee.arity} arguments, but got {len(expr.arguments)}",
@@ -149,6 +150,9 @@ class Interpreter(ExprVisitor, StmtVisitor):
         args = map(self.evaluate, expr.arguments)
 
         return callee.call(self, list(args))
+
+    def visit_anonymous_fn(self, expr: AnonymousFnExpr):
+        return LoxFunction(expr, self.env)
 
     def visit_literal(self, expr: Literal):
         return expr.value

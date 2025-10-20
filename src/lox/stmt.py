@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 
-from src.lox.expr import Expr
 from src.lox.token import Token
+
+if TYPE_CHECKING:
+    from src.lox.expr import AnonymousFnExpr, Expr
 
 
 class StmtVisitor(ABC):
@@ -116,12 +119,9 @@ class BreakStmt(Stmt):
 
 
 class FunDeclStmt(Stmt):
-    def __init__(
-        self, name: Token, params: list[Token], body: list[Stmt]
-    ) -> None:
+    def __init__(self, name: Token, declaration: Expr) -> None:
         self.name = name
-        self.params = params
-        self.body = body
+        self.declaration = declaration
 
     def accept(self, visitor: StmtVisitor):
         return visitor.visit_fun_decl(self)
