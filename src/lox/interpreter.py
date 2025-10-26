@@ -6,6 +6,11 @@ from typing import Any
 from src.lox.ast_printer import stringify
 from src.lox.callable import Callable, LoxFunction, Return
 from src.lox.env import Environment
+from src.lox.exceptions import (
+    BreakException,
+    ReferenceException,
+    RuntimeException,
+)
 from src.lox.expr import (
     AnonymousFnExpr,
     Assignment,
@@ -34,32 +39,18 @@ from src.lox.stmt import (
 from src.lox.token import TokenType, Token
 
 
-class RuntimeException(Exception):
-    def __init__(self, token: Token, msg: str, *args):
-        self.token = token
-        super().__init__(f"'{token.lexeme}' at line {token.line}, {msg}", *args)
-
-
-class DivideByZeroException(RuntimeException):
-    pass
-
-
-class ReferenceException(RuntimeException):
-    pass
-
-
-class BreakException(Exception):
-    pass
-
-
 class Interpreter(ExprVisitor, StmtVisitor):
     def __init__(self):
+        self.bindings = {}
         self.errors: [Exception] = []
         self.env_global = Environment()
 
         set_natives(self.env_global)
 
         self.env = self.env_global
+
+    def set_bindings(self, bindings: dict):
+        self.bindings = bindings
 
     def evaluate(self, stmt: Stmt | Expr):
         return stmt.accept(self)
@@ -72,9 +63,16 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
         self.env.put(stmt.identifier.lexeme, value)
 
+    def look_var(self, expr: Expr, var: Token):
+        distance = self.bindings.get(expr)
+        if distance is not None:
+            return self.env.get_at(distance, var.lexeme)
+        else:
+            return self.env.get(var.lexeme)
+
     def visit_variable(self, expr: Variable):
         try:
-            return self.env.get(expr.name.lexeme)
+            return self.look_var(expr, expr.name)
         except Exception as _:
             raise ReferenceException(expr.name, "Undefined Variable.")
 
@@ -127,7 +125,12 @@ class Interpreter(ExprVisitor, StmtVisitor):
     ## ----------- expressions start ----------------
     def visit_assignment(self, expr: Assignment):
         try:
-            self.env.assign(expr.name.lexeme, self.evaluate(expr.value))
+            distance = self.bindings.get(expr.name.lexeme)
+            value = self.evaluate(expr.value)
+            if distance is not None:
+                self.env.assign_at(distance, expr.name.lexeme, value)
+            else:
+                self.env.assign(expr.name.lexeme, value)
         except Exception as excp:
             raise ReferenceException(
                 expr.name, "Cannot assign to undefined Variable."

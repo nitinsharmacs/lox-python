@@ -3,6 +3,7 @@ import sys
 from src.lox.ast_printer import print_errors
 from src.lox.interpreter import Interpreter
 from src.lox.parser import Parser
+from src.lox.resolver import Resolver
 from src.lox.scanner import Scanner
 
 
@@ -10,6 +11,7 @@ class Lox:
     def __init__(self):
         self.had_errors = False
         self.had_runtime_errors = False
+        self.resolver = Resolver()
         self.interpreter = Interpreter()
 
     def run(self, code: str):
@@ -31,6 +33,14 @@ class Lox:
             print_errors(parser.errors)
             return
 
+        self.resolver.resolve_stmts(stmts)
+
+        if len(self.resolver.errors) > 0:
+            self.had_errors = True
+            print_errors(self.resolver.errors)
+            return
+
+        self.interpreter.set_bindings(self.resolver.bindings)
         self.interpreter.interpret(stmts)
 
         if self.interpreter.has_error:

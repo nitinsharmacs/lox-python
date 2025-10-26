@@ -15,6 +15,22 @@ class Environment:
 
         raise ValueError("value not present")
 
+    def get_at(self, pos: int, key: str):
+        env = self.ancester(pos)
+
+        if env is not None:
+            return env.get(key)
+
+        return self.get(key)
+
+    def ancester(self, pos: int) -> Environment | None:
+        env = self
+
+        for i in range(pos):
+            env = self.parent
+
+        return env
+
     def put(self, key: str, value):
         self.env[key] = value
 
@@ -27,6 +43,14 @@ class Environment:
             return self.parent.assign(key, value)
 
         raise ValueError("value not present")
+
+    def assign_at(self, pos: int, key: str, value):
+        env = self.ancester(pos)
+
+        if env is not None:
+            return env.assign(key, value)
+
+        self.assign(key, value)
 
     def has(self, key: str) -> bool:
         try:
