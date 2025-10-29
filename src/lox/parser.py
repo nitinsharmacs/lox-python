@@ -4,14 +4,17 @@ from src.lox.expr import (
     Assignment,
     Call,
     Expr,
+    GetExpr,
     Grouping,
     Logical,
+    SetExpr,
     Variable,
 )
 from src.lox.expr import Binary, Literal, Unary
 from src.lox.stmt import (
     BlockStmt,
     BreakStmt,
+    ClassDeclStmt,
     ExprStmt,
     FunDeclStmt,
     IfStmt,
@@ -78,6 +81,7 @@ class Parser:
         Rule implementation.
         declaration -> varDecl
                        | funDecl
+                       | classDecl
                        | statement
         """
         try:
@@ -86,6 +90,9 @@ class Parser:
             ):
                 self.consume(TokenType.FUN, "")
                 return self.function("function")
+
+            if self.match_any(TokenType.CLASS):
+                return self.class_decl()
 
             if self.match_any(TokenType.VAR):
                 return self.var_declaration()
@@ -110,6 +117,21 @@ class Parser:
         self.consume(TokenType.SEMICOLON, "Expected ';' after value.")
 
         return VarDeclStmt(identifier, initializer)
+
+    def class_decl(self):
+        name = self.consume(TokenType.IDENTIFIER, "Expected class name.")
+        self.consume(TokenType.LEFT_BRACE, "Expected '{' after class name.")
+
+        methods = []
+
+        while not (self.check(TokenType.RIGHT_BRACE) or self.is_at_end()):
+            methods.append(self.function("method"))
+
+        self.consume(
+            TokenType.RIGHT_BRACE, "Expected '}' after class definition."
+        )
+
+        return ClassDeclStmt(name, methods)
 
     def function(self, kind: str) -> FunDeclStmt:
         """
@@ -360,9 +382,11 @@ class Parser:
 
         if self.match_any(TokenType.EQUAL):
             token = self.previous()
+            value = self.assignment()
             if type(expr) is Variable:
-                value = self.assignment()
                 return Assignment(expr.name, value)
+            if type(expr) is GetExpr:
+                return SetExpr(expr.object, expr.property_name, value)
             self.errors.append(
                 SyntaxError(
                     token, "Invalid assignment. Did you mean to use '=='?"
@@ -477,19 +501,30 @@ class Parser:
     def call(self) -> Expr:
         """
         Rule implementation.
-        call -> primary ("(" arguments? ")")*
+        call -> primary ("(" arguments? ")" | "." IDENTIFIER)*
         """
         expr = self.primary()
 
-        while self.match_any(TokenType.LEFT_PAREN):
-            args = self.arguments()
-
-            token = self.consume(
-                TokenType.RIGHT_PAREN, "Expected closing ')' after args."
-            )
-            expr = Call(expr, args, token)
+        while True:
+            if self.match_any(TokenType.LEFT_PAREN):
+                expr = self.finish_call(expr)
+            elif self.match_any(TokenType.DOT):
+                property_name = self.consume(
+                    TokenType.IDENTIFIER, "Expected property name after '.'."
+                )
+                expr = GetExpr(expr, property_name)
+            else:
+                break
 
         return expr
+
+    def finish_call(self, expr: Expr) -> Expr:
+        args = self.arguments()
+
+        token = self.consume(
+            TokenType.RIGHT_PAREN, "Expected closing ')' after args."
+        )
+        return Call(expr, args, token)
 
     def arguments(self) -> list[Expr]:
         """

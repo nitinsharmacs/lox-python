@@ -44,6 +44,14 @@ class ExprVisitor(ABC):
     def visit_anonymous_fn(self, expr: AnonymousFnExpr):
         pass
 
+    @abstractmethod
+    def visit_get_expr(self, expr: GetExpr):
+        pass
+
+    @abstractmethod
+    def visit_set_expr(self, expr: SetExpr):
+        pass
+
 
 class Expr(ABC):
     @abstractmethod
@@ -141,3 +149,22 @@ class AnonymousFnExpr(Expr):
 
     def accept(self, visitor: ExprVisitor) -> Any:
         return visitor.visit_anonymous_fn(self)
+
+
+class GetExpr(Expr):
+    def __init__(self, object: Expr, property_name: Token) -> None:
+        self.object = object
+        self.property_name = property_name
+
+    def accept(self, visitor: ExprVisitor) -> Any:
+        return visitor.visit_get_expr(self)
+
+
+class SetExpr(Expr):
+    def __init__(self, object: Expr, property_name: Token, value) -> None:
+        self.object = object
+        self.property_name = property_name
+        self.value = value
+
+    def accept(self, visitor: ExprVisitor) -> Any:
+        return visitor.visit_set_expr(self)

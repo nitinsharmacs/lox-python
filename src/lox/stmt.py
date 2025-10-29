@@ -46,6 +46,10 @@ class StmtVisitor(ABC):
     def visit_return_stmt(self, stmt: ReturnStmt):
         pass
 
+    @abstractmethod
+    def visit_class_decl(self, stmt: ClassDeclStmt):
+        pass
+
 
 class Stmt(ABC):
     @abstractmethod
@@ -134,3 +138,12 @@ class ReturnStmt(Stmt):
 
     def accept(self, visitor: StmtVisitor):
         visitor.visit_return_stmt(self)
+
+
+class ClassDeclStmt(Stmt):
+    def __init__(self, name: Token, methods: list[FunDeclStmt]) -> None:
+        self.name = name
+        self.methods = methods
+
+    def accept(self, visitor: StmtVisitor):
+        visitor.visit_class_decl(self)

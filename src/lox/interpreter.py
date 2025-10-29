@@ -4,7 +4,13 @@ from ast import And
 import operator
 from typing import Any
 from src.lox.ast_printer import stringify
-from src.lox.callable import Callable, LoxFunction, Return
+from src.lox.callable import (
+    Callable,
+    LoxClass,
+    LoxFunction,
+    LoxInstance,
+    Return,
+)
 from src.lox.env import Environment
 from src.lox.exceptions import (
     BreakException,
@@ -18,9 +24,11 @@ from src.lox.expr import (
     Call,
     Expr,
     ExprVisitor,
+    GetExpr,
     Grouping,
     Literal,
     Logical,
+    SetExpr,
     Unary,
     Variable,
 )
@@ -28,6 +36,7 @@ from src.lox.natives import set_natives
 from src.lox.stmt import (
     BlockStmt,
     BreakStmt,
+    ClassDeclStmt,
     FunDeclStmt,
     IfStmt,
     ReturnStmt,
@@ -115,6 +124,10 @@ class Interpreter(ExprVisitor, StmtVisitor):
         fun = LoxFunction(stmt.declaration, self.env, stmt.name.lexeme)
         self.env.put(stmt.name.lexeme, fun)
 
+    def visit_class_decl(self, stmt: ClassDeclStmt):
+        klass = LoxClass(stmt.name)
+        self.env.put(stmt.name.lexeme, klass)
+
     def visit_return_stmt(self, stmt: ReturnStmt):
         raise Return(
             self.evaluate(stmt.value) if stmt.value is not None else None
@@ -131,6 +144,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 self.env.assign_at(distance, expr.name.lexeme, value)
             else:
                 self.env.assign(expr.name.lexeme, value)
+            return value
         except Exception as excp:
             raise ReferenceException(
                 expr.name, "Cannot assign to undefined Variable."
@@ -151,7 +165,6 @@ class Interpreter(ExprVisitor, StmtVisitor):
             )
 
         args = map(self.evaluate, expr.arguments)
-
         return callee.call(self, list(args))
 
     def visit_anonymous_fn(self, expr: AnonymousFnExpr):
@@ -240,6 +253,33 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 return -(self.evaluate(expr.right))
             case TokenType.BANG:
                 return not self.evaluate(expr.right)
+
+    def visit_get_expr(self, expr: GetExpr):
+        object = self.evaluate(expr.object)
+        if isinstance(object, LoxInstance):
+            property_name = expr.property_name.lexeme
+            try:
+                return object.get(property_name)
+            except KeyError as err:
+                raise RuntimeException(
+                    expr.property_name, f"Undefined property '{property_name}'."
+                )
+
+        raise RuntimeException(
+            expr.property_name, "Only instances have properties."
+        )
+
+    def visit_set_expr(self, expr: SetExpr):
+        object = self.evaluate(expr.object)
+
+        if isinstance(object, LoxInstance):
+            value = self.evaluate(expr.value)
+            object.set(expr.property_name.lexeme, value)
+            return value
+
+        raise RuntimeException(
+            expr.property_name, "Only instances have fields."
+        )
 
     ## ----------- expressions end ----------------
 

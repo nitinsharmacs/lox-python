@@ -1,5 +1,8 @@
 var name = "nitin";
-var age = 21;
+var height;
+var age = height = 21;
 
 print name;
 print age;
+
+print name = "hemant";

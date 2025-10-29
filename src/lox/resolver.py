@@ -6,15 +6,18 @@ from src.lox.expr import (
     Call,
     Expr,
     ExprVisitor,
+    GetExpr,
     Grouping,
     Literal,
     Logical,
+    SetExpr,
     Unary,
     Variable,
 )
 from src.lox.stmt import (
     BlockStmt,
     BreakStmt,
+    ClassDeclStmt,
     ExprStmt,
     FunDeclStmt,
     IfStmt,
@@ -130,6 +133,10 @@ class Resolver(StmtVisitor, ExprVisitor):
         self.end_scope()
         self.resolving_fun = prev_fn_status
 
+    def visit_class_decl(self, stmt: ClassDeclStmt):
+        self.declare(stmt.name)
+        self.define(stmt.name)
+
     def visit_expr_stmt(self, stmt: ExprStmt):
         self.resolve_expr(stmt.expr)
 
@@ -178,3 +185,10 @@ class Resolver(StmtVisitor, ExprVisitor):
 
     def visit_unary(self, expr: Unary):
         self.resolve_expr(expr.right)
+
+    def visit_get_expr(self, expr: GetExpr):
+        self.resolve_expr(expr.object)
+
+    def visit_set_expr(self, expr: SetExpr):
+        self.resolve_expr(expr.object)
+        self.resolve_expr(expr.value)
