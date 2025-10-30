@@ -1,6 +1,7 @@
+var age = 1;
 class Person {
   age () {
-    return 12;
+    return age;
   }
 }
 
@@ -10,4 +11,4 @@ print person;
 
 person.name = "nitin";
 
-print person.name;
+print person.age();

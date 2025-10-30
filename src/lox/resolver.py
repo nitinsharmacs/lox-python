@@ -137,6 +137,9 @@ class Resolver(StmtVisitor, ExprVisitor):
         self.declare(stmt.name)
         self.define(stmt.name)
 
+        for method in stmt.methods:
+            self.resolve_expr(method.declaration)
+
     def visit_expr_stmt(self, stmt: ExprStmt):
         self.resolve_expr(stmt.expr)
 

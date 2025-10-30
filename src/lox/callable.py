@@ -59,11 +59,15 @@ class LoxFunction(Callable):
 
 
 class LoxClass(Callable):
-    def __init__(self, name: Token):
+    def __init__(self, name: Token, methods: dict[str, LoxFunction]):
         self.__name = name
+        self.__methods = methods
 
     def call(self, interpreter: Interpreter, args: list[Any]) -> Any:
         return LoxInstance(self)
+
+    def get_method(self, name: str) -> LoxFunction | None:
+        return self.__methods.get(name)
 
     @property
     def name(self) -> str:
@@ -83,7 +87,14 @@ class LoxInstance:
         self.fields: dict[str, Any] = {}
 
     def get(self, property_name: str):
-        return self.fields[property_name]
+        if self.fields.get(property_name) is not None:
+            return self.fields[property_name]
+
+        method = self.klass.get_method(property_name)
+        if method is not None:
+            return method
+
+        raise ValueError("Undefined property")
 
     def set(self, property_name: str, value):
         self.fields[property_name] = value

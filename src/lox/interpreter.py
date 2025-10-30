@@ -125,7 +125,14 @@ class Interpreter(ExprVisitor, StmtVisitor):
         self.env.put(stmt.name.lexeme, fun)
 
     def visit_class_decl(self, stmt: ClassDeclStmt):
-        klass = LoxClass(stmt.name)
+        methods: dict[str, LoxFunction] = {}
+
+        for method in stmt.methods:
+            methods[method.name.lexeme] = LoxFunction(
+                method.declaration, self.env
+            )
+
+        klass = LoxClass(stmt.name, methods)
         self.env.put(stmt.name.lexeme, klass)
 
     def visit_return_stmt(self, stmt: ReturnStmt):
@@ -260,7 +267,7 @@ class Interpreter(ExprVisitor, StmtVisitor):
             property_name = expr.property_name.lexeme
             try:
                 return object.get(property_name)
-            except KeyError as err:
+            except ValueError as err:
                 raise RuntimeException(
                     expr.property_name, f"Undefined property '{property_name}'."
                 )
