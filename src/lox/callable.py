@@ -49,6 +49,11 @@ class LoxFunction(Callable):
         except Return as ret:
             return ret.value
 
+    def bind(self, instance: LoxInstance) -> LoxFunction:
+        closure = Environment(self.closure)
+        closure.put("this", instance)
+        return LoxFunction(self.funStmt, closure)
+
     @property
     def arity(self) -> int:
         return len(self.funStmt.params)
@@ -64,7 +69,13 @@ class LoxClass(Callable):
         self.__methods = methods
 
     def call(self, interpreter: Interpreter, args: list[Any]) -> Any:
-        return LoxInstance(self)
+        instance = LoxInstance(self)
+
+        initializer = self.get_method("init")
+        if initializer is not None:
+            initializer.bind(instance).call(interpreter, args)
+
+        return instance
 
     def get_method(self, name: str) -> LoxFunction | None:
         return self.__methods.get(name)
@@ -75,6 +86,9 @@ class LoxClass(Callable):
 
     @property
     def arity(self) -> int:
+        initializer = self.get_method("init")
+        if initializer is not None:
+            return initializer.arity
         return 0
 
     def __str__(self) -> str:
@@ -92,7 +106,7 @@ class LoxInstance:
 
         method = self.klass.get_method(property_name)
         if method is not None:
-            return method
+            return method.bind(self)
 
         raise ValueError("Undefined property")
 

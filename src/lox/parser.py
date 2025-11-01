@@ -8,6 +8,7 @@ from src.lox.expr import (
     Grouping,
     Logical,
     SetExpr,
+    ThisExpr,
     Variable,
 )
 from src.lox.expr import Binary, Literal, Unary
@@ -555,6 +556,7 @@ class Parser:
                    | "( expression ")"
                    | IDENTIFIER
                    | anonymous_fn
+                   | this
         """
 
         if self.match_any(TokenType.TRUE):
@@ -570,6 +572,9 @@ class Parser:
             expr = self.expression()
             self.consume(TokenType.RIGHT_PAREN, "Expected closing ')'.")
             return Grouping(expr)
+
+        if self.match_any(TokenType.THIS):
+            return ThisExpr(self.previous())
 
         if self.match_any(TokenType.IDENTIFIER):
             return Variable(self.previous())

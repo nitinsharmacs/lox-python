@@ -29,6 +29,7 @@ from src.lox.expr import (
     Literal,
     Logical,
     SetExpr,
+    ThisExpr,
     Unary,
     Variable,
 )
@@ -71,19 +72,6 @@ class Interpreter(ExprVisitor, StmtVisitor):
             value = self.evaluate(stmt.expr)
 
         self.env.put(stmt.identifier.lexeme, value)
-
-    def look_var(self, expr: Expr, var: Token):
-        distance = self.bindings.get(expr)
-        if distance is not None:
-            return self.env.get_at(distance, var.lexeme)
-        else:
-            return self.env.get(var.lexeme)
-
-    def visit_variable(self, expr: Variable):
-        try:
-            return self.look_var(expr, expr.name)
-        except Exception as _:
-            raise ReferenceException(expr.name, "Undefined Variable.")
 
     def visit_expr_stmt(self, expr_stmt):
         self.evaluate(expr_stmt.expr)
@@ -143,6 +131,22 @@ class Interpreter(ExprVisitor, StmtVisitor):
     ## ----------- statements end -------------------
 
     ## ----------- expressions start ----------------
+    def look_var(self, expr: Expr, var: Token):
+        distance = self.bindings.get(expr)
+        if distance is not None:
+            return self.env.get_at(distance, var.lexeme)
+        else:
+            return self.env.get(var.lexeme)
+
+    def visit_variable(self, expr: Variable):
+        try:
+            return self.look_var(expr, expr.name)
+        except Exception as _:
+            raise ReferenceException(expr.name, "Undefined Variable.")
+
+    def visit_this_expr(self, expr: ThisExpr):
+        return self.look_var(expr, expr.token)
+
     def visit_assignment(self, expr: Assignment):
         try:
             distance = self.bindings.get(expr.name.lexeme)

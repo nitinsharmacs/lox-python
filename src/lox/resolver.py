@@ -11,6 +11,7 @@ from src.lox.expr import (
     Literal,
     Logical,
     SetExpr,
+    ThisExpr,
     Unary,
     Variable,
 )
@@ -28,7 +29,7 @@ from src.lox.stmt import (
     VarDeclStmt,
     WhileStmt,
 )
-from src.lox.token import Token
+from src.lox.token import Token, TokenType
 
 
 class Resolver(StmtVisitor, ExprVisitor):
@@ -37,6 +38,7 @@ class Resolver(StmtVisitor, ExprVisitor):
         self.errors = []
         self.bindings = {}
         self.resolving_fun = False
+        self.resolving_class = False
 
     def new_error(self, token: Token, msg) -> Exception:
         error = ReferenceException(token, msg)
@@ -137,8 +139,21 @@ class Resolver(StmtVisitor, ExprVisitor):
         self.declare(stmt.name)
         self.define(stmt.name)
 
+        old_class_resolve_state = self.resolving_class
+        self.resolving_class = True
+        self.begin_scope()
+        self.define(Token(TokenType.THIS, 0, None, "this"))
+
         for method in stmt.methods:
             self.resolve_expr(method.declaration)
+
+        self.end_scope()
+        self.resolving_class = old_class_resolve_state
+
+    def visit_this_expr(self, expr: ThisExpr):
+        if self.resolving_class is False:
+            self.new_error(expr.token, "Can't use 'this' outside of class.")
+        self.resolve_local_var(expr, expr.token)
 
     def visit_expr_stmt(self, stmt: ExprStmt):
         self.resolve_expr(stmt.expr)

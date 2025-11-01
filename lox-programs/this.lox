@@ -1,0 +1,7 @@
+// invalid use of this
+
+fun call() {
+  return this;
+}
+
+this;

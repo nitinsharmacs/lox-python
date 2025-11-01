@@ -52,6 +52,10 @@ class ExprVisitor(ABC):
     def visit_set_expr(self, expr: SetExpr):
         pass
 
+    @abstractmethod
+    def visit_this_expr(self, expr: ThisExpr):
+        pass
+
 
 class Expr(ABC):
     @abstractmethod
@@ -168,3 +172,11 @@ class SetExpr(Expr):
 
     def accept(self, visitor: ExprVisitor) -> Any:
         return visitor.visit_set_expr(self)
+
+
+class ThisExpr(Expr):
+    def __init__(self, token: Token) -> None:
+        self.token = token
+
+    def accept(self, visitor: ExprVisitor) -> Any:
+        return visitor.visit_this_expr(self)
