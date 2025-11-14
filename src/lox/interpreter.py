@@ -115,12 +115,20 @@ class Interpreter(ExprVisitor, StmtVisitor):
     def visit_class_decl(self, stmt: ClassDeclStmt):
         methods: dict[str, LoxFunction] = {}
 
+        superclass = None
+        if stmt.superclass is not None:
+            superclass = self.evaluate(stmt.superclass)
+            if not isinstance(superclass, LoxClass):
+                raise ReferenceException(
+                    stmt.superclass.name, "Superclass must be a class"
+                )
+
         for method in stmt.methods:
             methods[method.name.lexeme] = LoxFunction(
                 method.declaration, self.env
             )
 
-        klass = LoxClass(stmt.name, methods)
+        klass = LoxClass(stmt.name, superclass, methods)
         self.env.put(stmt.name.lexeme, klass)
 
     def visit_return_stmt(self, stmt: ReturnStmt):

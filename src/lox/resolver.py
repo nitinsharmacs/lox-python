@@ -139,6 +139,13 @@ class Resolver(StmtVisitor, ExprVisitor):
         self.declare(stmt.name)
         self.define(stmt.name)
 
+        if stmt.superclass is not None:
+            if stmt.superclass.name.lexeme == stmt.name.lexeme:
+                self.new_error(
+                    stmt.superclass.name, "Class can't be inherited by itself."
+                )
+            self.resolve_expr(stmt.superclass)
+
         old_class_resolve_state = self.resolving_class
         self.resolving_class = True
         self.begin_scope()

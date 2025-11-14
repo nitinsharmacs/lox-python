@@ -64,8 +64,11 @@ class LoxFunction(Callable):
 
 
 class LoxClass(Callable):
-    def __init__(self, name: Token, methods: dict[str, LoxFunction]):
+    def __init__(
+        self, name: Token, superclass: LoxClass, methods: dict[str, LoxFunction]
+    ):
         self.__name = name
+        self.__superclass = superclass
         self.__methods = methods
 
     def call(self, interpreter: Interpreter, args: list[Any]) -> Any:

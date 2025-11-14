@@ -120,19 +120,28 @@ class Parser:
         return VarDeclStmt(identifier, initializer)
 
     def class_decl(self):
+        """
+        Rule implementation.
+        classDecl -> "class" IDENTIFIER ("<" IDENTIFIER)? "{" function* "}"
+        """
         name = self.consume(TokenType.IDENTIFIER, "Expected class name.")
-        self.consume(TokenType.LEFT_BRACE, "Expected '{' after class name.")
+
+        superclass = None
+        if self.match_any(TokenType.LESS):
+            superclass = Variable(
+                self.consume(TokenType.IDENTIFIER, "Expected superclass name.")
+            )
+
+        self.consume(TokenType.LEFT_BRACE, "Expected '{' before class body.")
 
         methods = []
 
         while not (self.check(TokenType.RIGHT_BRACE) or self.is_at_end()):
             methods.append(self.function("method"))
 
-        self.consume(
-            TokenType.RIGHT_BRACE, "Expected '}' after class definition."
-        )
+        self.consume(TokenType.RIGHT_BRACE, "Expected '}' after class body.")
 
-        return ClassDeclStmt(name, methods)
+        return ClassDeclStmt(name, superclass, methods)
 
     def function(self, kind: str) -> FunDeclStmt:
         """

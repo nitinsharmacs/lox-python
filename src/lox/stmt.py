@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from src.lox.token import Token
 
 if TYPE_CHECKING:
-    from src.lox.expr import AnonymousFnExpr, Expr
+    from src.lox.expr import AnonymousFnExpr, Expr, Variable
 
 
 class StmtVisitor(ABC):
@@ -141,8 +141,14 @@ class ReturnStmt(Stmt):
 
 
 class ClassDeclStmt(Stmt):
-    def __init__(self, name: Token, methods: list[FunDeclStmt]) -> None:
+    def __init__(
+        self,
+        name: Token,
+        superclass: Variable | None,
+        methods: list[FunDeclStmt],
+    ) -> None:
         self.name = name
+        self.superclass = superclass
         self.methods = methods
 
     def accept(self, visitor: StmtVisitor):
