@@ -11,6 +11,7 @@ from src.lox.expr import (
     Literal,
     Logical,
     SetExpr,
+    SuperExpr,
     ThisExpr,
     Unary,
     Variable,
@@ -39,6 +40,7 @@ class Resolver(StmtVisitor, ExprVisitor):
         self.bindings = {}
         self.resolving_fun = False
         self.resolving_class = False
+        self.resolve_subclass = False
 
     def new_error(self, token: Token, msg) -> Exception:
         error = ReferenceException(token, msg)
@@ -139,23 +141,30 @@ class Resolver(StmtVisitor, ExprVisitor):
         self.declare(stmt.name)
         self.define(stmt.name)
 
+        old_subclass_resolve_state = self.resolve_subclass
+
         if stmt.superclass is not None:
             if stmt.superclass.name.lexeme == stmt.name.lexeme:
                 self.new_error(
                     stmt.superclass.name, "Class can't be inherited by itself."
                 )
             self.resolve_expr(stmt.superclass)
+            self.resolve_subclass = True
 
         old_class_resolve_state = self.resolving_class
         self.resolving_class = True
+
         self.begin_scope()
+
         self.define(Token(TokenType.THIS, 0, None, "this"))
+        self.define(Token(TokenType.SUPER, 0, None, "super"))
 
         for method in stmt.methods:
             self.resolve_expr(method.declaration)
 
         self.end_scope()
         self.resolving_class = old_class_resolve_state
+        self.resolving_subclass = old_subclass_resolve_state
 
     def visit_this_expr(self, expr: ThisExpr):
         if self.resolving_class is False:
@@ -217,3 +226,12 @@ class Resolver(StmtVisitor, ExprVisitor):
     def visit_set_expr(self, expr: SetExpr):
         self.resolve_expr(expr.object)
         self.resolve_expr(expr.value)
+
+    def visit_super_expr(self, expr: SuperExpr):
+        if self.resolving_class is False:
+            self.new_error(expr.token, "Can't use 'super' outside of class.")
+        elif self.resolving_subclass is False:
+            self.new_error(
+                expr.token, "Can't use 'super' inside non-derived class."
+            )
+        self.resolve_local_var(expr, expr.token)

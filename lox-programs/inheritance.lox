@@ -1,3 +1,21 @@
-var B = "someting";
+class A {
+  callme() {
+    print "From class A";
+  }
+}
 
-class A < B{}
+class B < A {
+  callme() {
+    print "From class B";
+  }
+
+  handler() {
+    super.callme();
+  }
+}
+
+class C < B {}
+var c = C();
+c.handler();
+
+super.something;

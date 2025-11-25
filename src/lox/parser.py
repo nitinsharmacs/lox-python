@@ -8,6 +8,7 @@ from src.lox.expr import (
     Grouping,
     Logical,
     SetExpr,
+    SuperExpr,
     ThisExpr,
     Variable,
 )
@@ -566,6 +567,7 @@ class Parser:
                    | IDENTIFIER
                    | anonymous_fn
                    | this
+                   | "super" "." IDENTIFIER
         """
 
         if self.match_any(TokenType.TRUE):
@@ -590,6 +592,14 @@ class Parser:
 
         if self.match_any(TokenType.FUN):
             return self.anonymous_fn("function")
+
+        if self.match_any(TokenType.SUPER):
+            token = self.previous()
+            self.consume(TokenType.DOT, 'Expected "." after super')
+            method_name = self.consume(
+                TokenType.IDENTIFIER, "Expected superclass method name"
+            )
+            return SuperExpr(token, method_name)
 
         error = self.new_error(self.peek(), "Expected expression.")
 

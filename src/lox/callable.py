@@ -81,7 +81,13 @@ class LoxClass(Callable):
         return instance
 
     def get_method(self, name: str) -> LoxFunction | None:
-        return self.__methods.get(name)
+        method = self.__methods.get(name)
+        if method is not None:
+            return method
+        
+        if self.__superclass is not None:
+            return self.__superclass.get_method(name)
+        
 
     @property
     def name(self) -> str:

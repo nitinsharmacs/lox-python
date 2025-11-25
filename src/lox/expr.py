@@ -56,6 +56,10 @@ class ExprVisitor(ABC):
     def visit_this_expr(self, expr: ThisExpr):
         pass
 
+    @abstractmethod
+    def visit_super_expr(self, expr: SuperExpr):
+        pass
+
 
 class Expr(ABC):
     @abstractmethod
@@ -180,3 +184,12 @@ class ThisExpr(Expr):
 
     def accept(self, visitor: ExprVisitor) -> Any:
         return visitor.visit_this_expr(self)
+
+
+class SuperExpr(Expr):
+    def __init__(self, token: Token, method_name: Token) -> None:
+        self.token = token
+        self.method_name = method_name
+
+    def accept(self, visitor: ExprVisitor) -> Any:
+        return visitor.visit_super_expr(self)

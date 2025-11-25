@@ -1,6 +1,7 @@
 # type: ignore
 
 from ast import And
+import dis
 import operator
 from typing import Any
 from src.lox.ast_printer import stringify
@@ -29,6 +30,7 @@ from src.lox.expr import (
     Literal,
     Logical,
     SetExpr,
+    SuperExpr,
     ThisExpr,
     Unary,
     Variable,
@@ -122,11 +124,17 @@ class Interpreter(ExprVisitor, StmtVisitor):
                 raise ReferenceException(
                     stmt.superclass.name, "Superclass must be a class"
                 )
+            self.env = Environment(self.env)
+            self.env.put("super", superclass)
+
 
         for method in stmt.methods:
             methods[method.name.lexeme] = LoxFunction(
                 method.declaration, self.env
             )
+
+        if stmt.superclass is not None:
+            self.env = self.env.parent
 
         klass = LoxClass(stmt.name, superclass, methods)
         self.env.put(stmt.name.lexeme, klass)
@@ -154,6 +162,21 @@ class Interpreter(ExprVisitor, StmtVisitor):
 
     def visit_this_expr(self, expr: ThisExpr):
         return self.look_var(expr, expr.token)
+
+    def visit_super_expr(self, expr: SuperExpr):
+        distance = self.bindings.get(expr)
+        
+        superclass: LoxClass = self.env.get_at(distance, expr.token.lexeme)
+        instance = self.env.get_at(distance, "this")
+        method = superclass.get_method(expr.method_name.lexeme)
+
+        if method is None:
+            raise RuntimeException(
+                expr.method_name,
+                f"Undefined property {expr.method_name.lexeme}.",
+            )
+        
+        return method.bind(instance)
 
     def visit_assignment(self, expr: Assignment):
         try:
